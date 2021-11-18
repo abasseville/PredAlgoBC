@@ -1,4 +1,4 @@
-# PredAlgoBC
+## PredAlgoBC
 
 PredAlgoBC is a MSCA-funded project for the search of biomarkers for breast cancer therapy.
 
@@ -6,8 +6,8 @@ WP1: implementation of a pipeline for cross-platform normalization between micro
 
 WP2:	Built of machine learning predictive models in breast cancer
 
-More information on PredAlgoBC project :
----------------------------------------
+# More information on PredAlgoBC project :
+
 
 https://cordis.europa.eu/project/id/841313
 
