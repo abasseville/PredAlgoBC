@@ -32,8 +32,9 @@ BatchCol<-"batch"
 
 library(preprocessCore)
 library(TDM)
-library(limma)
-library(sva)
+library(limma)   # RBE
+library(sva)   # Combat
+library(CONOR)   # xpn
 
 
 # custom function
@@ -305,8 +306,8 @@ for (i in names(sampleAnnot_Rseq) ){
   print(paste0("ncol after merge:",ncol(CombexprSet[[i]])))
 }
 
-saveRDS(CombsampleAnnot,file="CombsampleAnnot.rds")
-saveRDS(CombexprSet,file="CombexprSet.rds")
+saveRDS(CombsampleAnnot,file="noCPN_sampleAnnot.rds")
+saveRDS(CombexprSet,file="noCPN_exprSet.rds")
 
 
 #========================
@@ -331,7 +332,8 @@ for  (i in names(exprSet)[-(length(exprSet)] ) {      # no transformation for th
   print(paste0(names(exprSet)[[i]], ": done"))
 }
 
-saveRDS(tdm, file= "exprSet_tdm.rds")
+saveRDS(tdm, file= "exprSet_TDM.rds")
+rm(tdm)
 
 #===================
 
@@ -347,8 +349,8 @@ for  (i in names(exprSet)[-(length(exprSet)] ) {
   print(paste0("exprSet ", i, ": done"))
 }
 
-saveRDS(fsqn, file= "exprSet_fsqn.rds")
-
+saveRDS(fsqn, file= "exprSet_FSQN.rds")
+rm(fsqn)
 
 #===================
 
@@ -365,7 +367,7 @@ for (i in names(CombexprSet)) {
 }
 
 saveRDS(exprSet_RBE, file= "exprSet_RBE.rds")
-
+rm(exprSet_RBE)
 
 #=============================
 
@@ -380,6 +382,7 @@ for (i in names(CombexprSet)){
 }
 
 saveRDS(exprSet_Comb, file= "exprSet_Comb.rds")
+rm(exprSet_Comb)
 
 #=============================
 
@@ -404,6 +407,7 @@ for (i in names(CombexprSet)){
 }
 
 save(exprSet_MM, file="exprSet_MM.rda")
+rm(exprSet_MM)
 
 #=============================
 
@@ -430,12 +434,33 @@ for (i in names(CombexprSet)){
 
 
 saveRDS(exprSet_GQ, file="exprSet_GQ.rds")
-
+rm(exprSet_GQ)
 
 #=============================
 
 #  XPN
 
 #=============================
+
+exprSet_XPN<-list()
+
+for (i in names(CombexprSet)){
+  Babatch <- as.factor ( CombsampleAnnot[[i]][,batchCol] )
+  contrasts(Babatch) <- contr.sum(levels(Babatch))
+  Babatch <- model.matrix(~Babatch)[, -1, drop = FALSE]
+  affyMat <- CombexprSet[[i]][,Babatch==1]
+  RseqMat <- CombexprSet[[i]][,Babatch==-1]
+  
+  exprSet_XPN[[i]]<-xpn(affyMat,RseqMat)
+  exprSet_XPN[[i]] <-cbind(exprSet_XPN[[i]]$x,exprSet_XPN[[i]]$y)
+  
+  print(paste0(i, ": done"))
+}
+
+saveRDS(exprSet_XPN, file="exprSet_XPN.rds")
+
+
+# the end
+
 
 
