@@ -10,4 +10,4 @@ More PredAlgoBC project information:
 
 https://cordis.europa.eu/project/id/841313
 
-https://www.institut-cancerologie-ouest.com/liste-des-projets-recents-de-lunite  (-> See PredAlgoBC at the bottom)
+https://www.institut-cancerologie-ouest.com/liste-des-projets-recents-de-lunite  -> See "PredAlgoBC" at the bottom of the page (in english)
