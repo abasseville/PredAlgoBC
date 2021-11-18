@@ -24,6 +24,8 @@ for (i in names(exprSet) ){
   sampleAnnot_All[[i]]$batch <- i
 }
 
+BatchCol<-"batch" 
+
 
 # load library and function
 #===========================
@@ -31,6 +33,8 @@ for (i in names(exprSet) ){
 library(preprocessCore)
 library(TDM)
 library(limma)
+library(sva)
+
 
 # custom function
 #===================
@@ -116,6 +120,8 @@ OLS <- function(X, Y){
   SST <- rowSums(Y^2)
   return(list(betamat=betamat, corr=cc, covxy=CovXY, varx=VarX, Yhat=Yhat, RSS=RSS, var.explained.prop=SS1/SST, Xbar=Xbar, Ybar=Ybar))
 }
+
+
 flmer <- function(Xmat, Ymat){
   Xmat <- as.matrix(Xmat); Ymat <- as.matrix(Ymat)
   ## 11/12/2018. Use new notations; p==ngenes; n==sample size
@@ -192,6 +198,8 @@ flmer <- function(Xmat, Ymat){
               lambdahat=lambdahat, var.epsilon=var.epsilon,
               covBeta=covBeta, t.fixed=t.fixed))
 }
+
+
 MM <- function(Xmat, Ymat){
   rr1 <- OLS(Xmat, Ymat)
   cov1 <- cov(rr1$betamat)
@@ -221,6 +229,85 @@ MM <- function(Xmat, Ymat){
 }
 
 
+gq = function(platform1.data, platform2.data, p1.names=0, p2.names=0, skip.match=FALSE){
+  #This function is basically a wrapper for normalizeGQ
+  
+  #Match names
+  input = processplatforms(list(x=platform1.data,y=platform2.data),namesvec = c(p1.names, p2.names), skip.match=skip.match)
+  
+  #Prepare for normalizeGQ
+  combined = cbind(input$x,input$y)
+  pf = c(seq(1,1,length.out=dim(input$x)[2]),seq(2,2,length.out=dim(input$y)[2]))
+  
+  #Call normalizeGQ
+  ngq = normalizeGQ(combined,pf)
+  
+  #Split the results and return
+  out=split(seq(pf),pf)
+  out[[1]] = ngq[,out[[1]]]
+  out[[2]] = ngq[,out[[2]]]
+  names(out) <- c("x","y")
+  return(out)
+}
+
+
+normalizeGQ <- function(M, pf, ...) { 
+  #This function was provided by Xiao-Qin Xia, one of the authors of webarraydb.
+  # modified MRS
+  # M is the data matrix
+  # pf is the vector to specify the platform for each column of M.
+  idx <- split(seq(pf), pf)
+  if (length(pf)<=1) return(M)
+  imax <- which.max(sapply(idx, length)) # for reference
+  ref_med <- apply(M[, idx[[imax]]], 1, function(x) median(x, na.rm=TRUE))
+  ref_med_srt <- sort(ref_med)
+  idx[imax] <- NULL
+  lapply(idx, function(i) {
+    MTMP <- sapply(i, function(x) ref_med_srt[rank(M[,x])]); 
+    M[,i] <<- MTMP - apply(MTMP, 1, median) + ref_med 
+  } )
+  invisible(M)
+}
+
+
+
+
+#==========================================================
+
+#     Merging each RNAseq table with affy
+
+#=========================================================
+
+
+exprSet_affy <- exprSet[["affy"]]
+exprSet_Rseq <- exprSet[-(length(exprSet)]
+sampleAnnot_affy<- sampleAnnot[["affy"]]
+sampleAnnot_Rseq <- sampleAnnot[-(length(exprSet)]
+
+
+CombSampleAnnot <-list()
+for (i in names(exprSet_Rseq) ){
+CombSampleAnnot[[i]] <- rbind(sampleAnnot_affy,sampleAnnot_Rseq[[i]])
+CombSampleAnnot[[i]]$subtype <- "Lum"
+CombSampleAnnot[[i]]$subtype[CombSampleAnnot[[i]]$er.status.by.ihc == "Negative" & CombSampleAnnot[[i]]$pr.status.by.ihc == "Negative" & CombSampleAnnot[[i]]$her2.status.by.ihc == "Negative"]<-"TripleNeg"
+CombSampleAnnot[[i]]$subtype[CombSampleAnnot[[i]]$her2.status.by.ihc == "Positive"]<-"HER2"
+}
+
+
+CombexprSet<-list()
+for (i in names(sampleAnnot_Rseq) ){
+  print(paste0("nrow before merge:",nrow(sampleAnnot_Rseq[[i]])))
+  print(paste0("ncol before merge:", ncol(sampleAnnot_Rseq[[i]]), " - expected after: ", (ncol(sampleAnnot_Rseq[[i]])*2)))
+  CombexprSet[[i]] <- merge(exprSet_affy, sampleAnnot_Rseq[[i]],
+                        by= "row.names")
+  row.names(CombexprSet[[i]]) <-CombexprSet[[i]][,1]; CombexprSet[[i]] <-CombexprSet[[i]][,-1]
+  print(paste0("nrow after merge:",nrow(CombexprSet[[i]])))
+  print(paste0("ncol after merge:",ncol(CombexprSet[[i]])))
+}
+
+saveRDS(CombsampleAnnot,file="CombsampleAnnot.rds")
+saveRDS(CombexprSet,file="CombexprSet.rds")
+
 
 #========================
 
@@ -244,7 +331,7 @@ for  (i in names(exprSet)[-(length(exprSet)] ) {      # no transformation for th
   print(paste0(names(exprSet)[[i]], ": done"))
 }
 
-saveRDS(tdm, file= "tdm.rds")
+saveRDS(tdm, file= "exprSet_tdm.rds")
 
 #===================
 
@@ -256,14 +343,11 @@ saveRDS(tdm, file= "tdm.rds")
 fsqn <-list()
 for  (i in names(exprSet)[-(length(exprSet)] ) {
   fsqn[[i]] <- quantileNormalizeByFeature2(as.matrix(exprSet[[i]]),   #test
-                                                as.matrix(exprSet[["affy"]]))   #target
-  
+                                           as.matrix(exprSet[["affy"]]))   #target
   print(paste0("exprSet ", i, ": done"))
 }
 
-
-
-saveRDS(fsqn, file= "fsqn.rds")
+saveRDS(fsqn, file= "exprSet_fsqn.rds")
 
 
 #===================
@@ -273,52 +357,85 @@ saveRDS(fsqn, file= "fsqn.rds")
 #===================
 
 
-#===========================================
-#     Merging each RNAseq table with affy 
-#==========================================
-
-
-exprSet_affy <- exprSet[["affy"]]
-exprSet_Rseq <- exprSet[-(length(exprSet)]
-sampleAnnot_affy<- sampleAnnot[["affy"]]
-sampleAnnot_Rseq <- sampleAnnot[-(length(exprSet)]
-
-
-CombSampleAnnot <-list()
-for (i in names(exprSet_Rseq) ){
-CombSampleAnnot[[i]] <- rbind(sampleAnnot_affy,sampleAnnot_Rseq[[i]])
-CombSampleAnnot[[i]]$subtype <- "Lum"
-CombSampleAnnot[[i]]$subtype[CombSampleAnnot[[i]]$er.status.by.ihc == "Negative" & CombSampleAnnot[[i]]$pr.status.by.ihc == "Negative" & CombSampleAnnot[[i]]$her2.status.by.ihc == "Negative"]<-"TripleNeg"
-CombSampleAnnot[[i]]$subtype[CombSampleAnnot[[i]]$her2.status.by.ihc == "Positive"]<-"HER2"
-}
-
-
-saveRDS(CombsampleAnnot,file="CombsampleAnnot.rds")
-
-
-CombexprSet<-list()
-for (i in names(sampleAnnot_Rseq) ){
-  print(paste0("nrow before merge:",nrow(sampleAnnot_Rseq[[i]])))
-  print(paste0("ncol before merge:", ncol(sampleAnnot_Rseq[[i]]), " - expected after: ", (ncol(sampleAnnot_Rseq[[i]])*2)))
-  CombexprSet[[i]] <- merge(exprSet_affy, sampleAnnot_Rseq[[i]],
-                        by= "row.names")
-  row.names(CombexprSet[[i]]) <-CombexprSet[[i]][,1]; CombexprSet[[i]] <-CombexprSet[[i]][,-1]
-  print(paste0("nrow after merge:",nrow(CombexprSet[[i]])))
-  print(paste0("ncol after merge:",ncol(CombexprSet[[i]])))
-}
-
-#==========
-# apply RBE
-#============
-
-BatchCol<-"batch" 
 exprSet_RBE <-list()
-
 for (i in names(CombexprSet)) {
-  
   exprSet_RBE[[i]]<-limma::removeBatchEffect(CombexprSet[[i]],batch = CombsampleAnnot[[i]][,batchCol])
   exprSet_RBE[[i]]<-exprSet_RBE[[i]]-min(exprSet_RBE[[i]])
-  
   print(paste0(i, " done"))
 }
+
+saveRDS(exprSet_RBE, file= "exprSet_RBE.rds")
+
+
+#=============================
+
+# Combat   #sva dependant
+
+#=============================
+
+exprSet_Comb <-list()
+for (i in names(CombexprSet)){
+  exprSet_Comb[[i]]<-sva::ComBat(as.matrix(CombexprSet[[i]]),batch = CombsampleAnnot[[i]][,batchCol],mod=NULL, par.prior = TRUE, prior.plots = FALSE)
+  print(paste0(i, ": done"))
+}
+
+saveRDS(exprSet_Comb, file= "exprSet_Comb.rds")
+
+#=============================
+
+# MatchMixeR
+
+#=============================
+
+exprSet_MM<-list()
+
+for (i in names(CombexprSet)){
+  
+  Babatch <- as.factor ( CombsampleAnnot[[i]][,batchCol] )
+  contrasts(Babatch) <- contr.sum(levels(Babatch))
+  Babatch <- model.matrix(~Babatch)[, -1, drop = FALSE]
+  affyMat <- CombexprSet[[i]][,Babatch==1]
+  RseqMat <- CombexprSet[[i]][,Babatch==-1]
+  
+  exprSet_MM[[i]]<-MM(Xmat=RseqMat,Ymat=affyMat)
+  exprSet_MM[[i]]<-cbind(affyMat,as.data.frame(exprSet_MM[[i]]$Yhat))
+  
+  print(paste0(i, ": done"))
+}
+
+save(exprSet_MM, file="exprSet_MM.rda")
+
+#=============================
+
+#  GQ
+
+#=============================
+
+
+exprSet_GQ<-list()
+
+for (i in names(CombexprSet)){
+  
+  Babatch <- as.factor ( CombsampleAnnot[[i]][,batchCol] )
+  contrasts(Babatch) <- contr.sum(levels(Babatch))
+  Babatch <- model.matrix(~Babatch)[, -1, drop = FALSE]
+  affyMat <- CombexprSet[[i]][,Babatch==1]
+  RseqMat <- CombexprSet[[i]][,Babatch==-1]
+  
+  exprSet_GQ[[i]]<- gq(platform1.data=affyMat, platform2.data=RseqMat)
+  exprSet_GQ[[i]]<-cbind(affyMat,exprSet_GQ[[i]]$y)
+  
+  print(paste0(i, ": done"))
+}
+
+
+saveRDS(exprSet_GQ, file="exprSet_GQ.rds")
+
+
+#=============================
+
+#  XPN
+
+#=============================
+
 
