@@ -39,7 +39,8 @@ library(CONOR)   # xpn
 # custom function
 #===================
 
-# These functions was available at https://github.com/dy16b/Cross-Platform-Normalization (publication: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7868049/)
+# These functions were copied from  https://github.com/dy16b/Cross-Platform-Normalization 
+# publication: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7868049/
 
 
 quantileNormalizeByFeature2 <- function (matrix_to_normalize, target_distribution_matrix) 
