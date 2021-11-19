@@ -8,7 +8,6 @@
 #=========================================================================================
 #===============================================================================================
 
-# matchmixer function was available at https://github.com/dy16b/Cross-Platform-Normalization (publication: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7868049/)
 
 # load dataset
 #==============
@@ -39,6 +38,9 @@ library(CONOR)   # xpn
 
 # custom function
 #===================
+
+# These functions was available at https://github.com/dy16b/Cross-Platform-Normalization (publication: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7868049/)
+
 
 quantileNormalizeByFeature2 <- function (matrix_to_normalize, target_distribution_matrix) 
 {
@@ -102,6 +104,7 @@ processplatforms = function(datalist, namesvec=NULL, skip.match=FALSE){
   }
   return(datalist)
 }
+
 OLS <- function(X, Y){
   ## A fast row-wise univariate OLS regression based on linear algebra
   Xbar <- rowMeans(X); Ybar <- rowMeans(Y, na.rm = TRUE)
@@ -253,8 +256,7 @@ gq = function(platform1.data, platform2.data, p1.names=0, p2.names=0, skip.match
 
 
 normalizeGQ <- function(M, pf, ...) { 
-  #This function was provided by Xiao-Qin Xia, one of the authors of webarraydb.
-  # modified MRS
+  #This function was provided by Xiao-Qin Xia, one of the authors of webarraydb modified MRS
   # M is the data matrix
   # pf is the vector to specify the platform for each column of M.
   idx <- split(seq(pf), pf)
