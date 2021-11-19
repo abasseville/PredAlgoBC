@@ -40,7 +40,7 @@ library(CONOR)   # xpn
 # custom function
 #===================
 
-quantileNormalizeByFeature2 <-function (matrix_to_normalize, target_distribution_matrix) 
+quantileNormalizeByFeature2 <- function (matrix_to_normalize, target_distribution_matrix) 
 {
   if (ncol(matrix_to_normalize) != ncol(target_distribution_matrix)) {
     cat("ERROR: Data matrices are not compatible - column lengths differ!")
