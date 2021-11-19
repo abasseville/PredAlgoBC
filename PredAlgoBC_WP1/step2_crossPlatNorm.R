@@ -13,7 +13,7 @@
 # load dataset
 #==============
 
-setwd("tcga)
+setwd("tcga")
 exprSet <- readRDS("exprSet.rds")
 exprSet <- exprSet[-1]   # remove "count" dataset from the list (1st one)
 sampleAnnot <- readRDS("sampleAnnot.rds")
