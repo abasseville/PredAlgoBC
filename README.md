@@ -1,6 +1,6 @@
 # PredAlgoBC
 
-PredAlgoBC is a MSCA-funded project for the search of biomarkers for breast cancer therapy.
+PredAlgoBC is a Marie Skłodowska-Curie Actions-funded project (Horizon H2020) for the search of biomarkers for breast cancer therapy.
 
 **WP1**: Implementation of a pipeline for cross-platform normalization between microarray and RNA-seq. We used TCGA data as an example since it provides paired samples with both microarray and RNA-seq data
 
