@@ -463,7 +463,7 @@ for (i in names(CombexprSet)){
 saveRDS(exprSet_XPN, file="exprSet_XPN.rds")
 
 
-# the end
+# the end, see step 3 for data visualisation and performance calculation
 
 
 
