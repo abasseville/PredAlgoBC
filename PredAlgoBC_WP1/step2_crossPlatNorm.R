@@ -26,7 +26,7 @@ for (i in names(exprSet) ){
 BatchCol<-"batch" 
 
 
-# load library and function
+# load library 
 #===========================
 
 library(preprocessCore)
@@ -35,8 +35,30 @@ library(limma)   # RBE
 library(sva)   # Combat
 library(CONOR)   # xpn
 
+# violinplot  function
+#===================
 
-# custom function
+violinPlot = function (df, mainTitle,dotsize,binwidth,Xangle =0){
+  dataf <- gather(df ,key="Data", value="Val")
+  ggplot(dataf, aes(x=Data, y=Val, fill=Data)) +
+    theme(axis.text.x = element_text(angle = Xangle, hjust = 1))+
+    ggtitle(mainTitle)+
+    scale_x_discrete(limits=names(df))+    #to avoid ggplot to reorder alph automatiqualy  
+    geom_violin(trim = FALSE)+
+    geom_dotplot(binaxis='y', stackdir='center',dotsize=dotsize,fill = "black",binwidth = binwidth)
+}
+
+violinPlot_Ylim = function (df, mainTitle,dotsize,binwidth,Xangle =0,ylo,yhi){
+  dataf <- gather(df ,key="Data", value="Val")
+  ggplot(dataf, aes(x=Data, y=Val, fill=Data)) +
+    theme(axis.text.x = element_text(angle = Xangle, hjust = 1))+
+    ggtitle(mainTitle)+ ylim(ylo,yhi)+
+    scale_x_discrete(limits=names(df))+    #to avoid ggplot to reorder alph automatiqualy  
+    geom_violin(trim = FALSE)+
+    geom_dotplot(binaxis='y', stackdir='center',dotsize=dotsize,fill = "black",binwidth = binwidth)
+}
+
+# normalization custom function
 #===================
 
 # These functions were copied from  https://github.com/dy16b/Cross-Platform-Normalization 
@@ -287,6 +309,17 @@ exprSet_affy <- exprSet[["affy"]]
 exprSet_Rseq <- exprSet[-(length(exprSet)]
 sampleAnnot_affy<- sampleAnnot[["affy"]]
 sampleAnnot_Rseq <- sampleAnnot[-(length(exprSet)]
+ 
+# select randomly 4 genes and 4 samples to plot  for each cross pltform normalization
+random_genes <-sample(row.names(sampleAnnot_affy),size = 4,replace =F)                                
+random_sples<-sample(names(sampleAnnot_affy[,1:ncol(sampleAnnot_affy)],size = 4,replace =F)
+                    
+                    
+#===============================================
+                    
+# no crossplatform normalization (noCPN) reference dataset
+
+#======================================================
 
 
 CombSampleAnnot <-list()
@@ -308,7 +341,44 @@ for (i in names(sampleAnnot_Rseq) ){
   print(paste0("nrow after merge:",nrow(CombexprSet[[i]])))
   print(paste0("ncol after merge:",ncol(CombexprSet[[i]])))
 }
+ 
+ #  violin plot
+ #===============
 
+  exprSet_toplot <- CombexprSet
+  name_toplot <-"noCPN"
+  n <-ncol(exprSet_toplot)
+                    
+pdf(paste0("after_CPN_violinPlot_4genes_",name_toplot,".pdf"),height = 4, width = 6)       
+                   
+  for (j in random_genes){
+    
+    gene_df <-do.call(rbind, (lapply(exprSet_toplot[, ((n/2)+1):n], function(x) x[j,])))   #because "NOT affy samples" are at the second part of the dataframe
+    gene_df<- as.data.frame(t(gene_df))
+    gene_df$affy <-as.numeric(  exprSet_toplot[j,1:(n/2)]  )  # because affy samples are at the first part of the dataframe
+    p<-violinPlot(gene_df, mainTitle=paste0(name_toplot," - gene = ",j),
+                            dotsize=0,binwidth=0.2,Xangle=45)      
+    print (p)
+    
+  }
+dev.off()
+                                     
+ pdf(paste0("after_CPN_violinPlot_4sples_",name_toplot,".pdf"),height = 4, width = 6)   
+                    
+  for (j in random_sples){
+    
+    denst <- lapply(exprSet_toplot[, ((n/2)+1):n], function(x) density(x[,j])  )
+    ind_df <-do.call(rbind, (lapply(denst, function(dens) dens$y)  ) )
+    ind_df<- as.data.frame(t(ind_df))
+    densAffy <- density(exprSet_toplot[,paste0(j,"_affy")])
+    ind_df$affy <- densAffy$y
+    p<-violinPlot_Ylim(ind_df, mainTitle=paste0(name_toplot, " - pat = ",j),
+                       dotsize=0,binwidth=0.2,Xangle=45, ylo = -0.1, yhi = 0.5)      
+    print (p)
+  }
+dev.off()
+                    
+                                 
 saveRDS(CombsampleAnnot,file="sampleAnnot_noCPN.rds")
 saveRDS(CombexprSet,file="exprSet_noCPN.rds")
 
@@ -319,24 +389,60 @@ saveRDS(CombexprSet,file="exprSet_noCPN.rds")
 
 #==================
 
-tdm <-list()
+exprSet_TDM <-list()
 for  (i in names(exprSet)[-(length(exprSet)] ) {      # no transformation for the last of the list:  affy
-  tdm [[i]]<-TDM::tdm_transform(ref_data = data.table(cbind(gene=rownames(exprSet[["affy"]]), 
+  exprSet_TDM [[i]]<-TDM::tdm_transform(ref_data = data.table(cbind(gene=rownames(exprSet[["affy"]]), 
                                                             exprSet[["affy"]])),
                                 target_data = data.table(cbind(gene=rownames(exprSet[[i]]), 
                                                                exprSet[[i]])),
                                 log_target = TRUE, tdm_factor = 1)
                                 
   # transform to numeric (not numric with datatable)
-  tdm[[i]] <- as.data.frame(tdm[[i]])
-  row.names.tdm<-tdm [[i]]$gene
-  tdm [[i]] <- as.data.frame(sapply(tdm [[i]][,-1], as.numeric) )
-  row.names(tdm[[i]]) <- row.names.tdm
+  exprSet_TDM[[i]] <- as.data.frame(exprSet_TDM[[i]])
+  row.names.tdm<-exprSet_TDM [[i]]$gene
+  exprSet_TDM [[i]] <- as.data.frame(sapply(exprSet_TDM [[i]][,-1], as.numeric) )
+  row.names(exprSet_TDM[[i]]) <- row.names.tdm
   print(paste0(names(exprSet)[[i]], ": done"))
 }
+                          
+ #  violin plot
+ #===============                          
+   
+  exprSet_toplot <- exprSet_TDM
+  name_toplot <-"TDM"
+  n <-ncol(exprSet_toplot)
+                    
+pdf(paste0("after_CPN_violinPlot_4genes_",name_toplot,".pdf"),height = 4, width = 6)       
+                   
+  for (j in random_genes){
+    
+    gene_df <-do.call(rbind, (lapply(exprSet_toplot[, ((n/2)+1):n], function(x) x[j,])))   #because "NOT affy samples" are at the second part of the dataframe
+    gene_df<- as.data.frame(t(gene_df))
+    gene_df$affy <-as.numeric(  exprSet_toplot[j,1:(n/2)]  )  # because affy samples are at the first part of the dataframe
+    p<-violinPlot(gene_df, mainTitle=paste0(name_toplot," - gene = ",j),
+                            dotsize=0,binwidth=0.2,Xangle=45)      
+    print (p)
+    
+  }
+dev.off()
+                                     
+ pdf(paste0("after_CPN_violinPlot_4sples_",name_toplot,".pdf"),height = 4, width = 6)   
+                    
+  for (j in random_sples){
+    
+    denst <- lapply(exprSet_toplot[, ((n/2)+1):n], function(x) density(x[,j])  )
+    ind_df <-do.call(rbind, (lapply(denst, function(dens) dens$y)  ) )
+    ind_df<- as.data.frame(t(ind_df))
+    densAffy <- density(exprSet_toplot[,paste0(j,"_affy")])
+    ind_df$affy <- densAffy$y
+    p<-violinPlot_Ylim(ind_df, mainTitle=paste0(name_toplot, " - pat = ",j),
+                       dotsize=0,binwidth=0.2,Xangle=45, ylo = -0.1, yhi = 0.5)      
+    print (p)
+  }
+dev.off()
 
-saveRDS(tdm, file= "exprSet_TDM.rds")
-rm(tdm)
+saveRDS(exprSet_TDM, file= "exprSet_TDM.rds")
+rm(exprSet_TDM)
 
 #===================
 
@@ -345,15 +451,51 @@ rm(tdm)
 #===================
  
 
-fsqn <-list()
+exprSet_FSQN <-list()
 for  (i in names(exprSet)[-(length(exprSet)] ) {
-  fsqn[[i]] <- quantileNormalizeByFeature2(as.matrix(exprSet[[i]]),   #test
+  exprSet_FSQN[[i]] <- quantileNormalizeByFeature2(as.matrix(exprSet[[i]]),   #test
                                            as.matrix(exprSet[["affy"]]))   #target
   print(paste0("exprSet ", i, ": done"))
 }
+                          
+ #  violin plot
+ #===============                          
+   
+  exprSet_toplot <- exprSet_FSQN
+  name_toplot <-"FSQN"
+  n <-ncol(exprSet_toplot)
+                    
+pdf(paste0("after_CPN_violinPlot_4genes_",name_toplot,".pdf"),height = 4, width = 6)       
+                   
+  for (j in random_genes){
+    
+    gene_df <-do.call(rbind, (lapply(exprSet_toplot[, ((n/2)+1):n], function(x) x[j,])))   #because "NOT affy samples" are at the second part of the dataframe
+    gene_df<- as.data.frame(t(gene_df))
+    gene_df$affy <-as.numeric(  exprSet_toplot[j,1:(n/2)]  )  # because affy samples are at the first part of the dataframe
+    p<-violinPlot(gene_df, mainTitle=paste0(name_toplot," - gene = ",j),
+                            dotsize=0,binwidth=0.2,Xangle=45)      
+    print (p)
+    
+  }
+dev.off()
+                                     
+ pdf(paste0("after_CPN_violinPlot_4sples_",name_toplot,".pdf"),height = 4, width = 6)   
+                    
+  for (j in random_sples){
+    
+    denst <- lapply(exprSet_toplot[, ((n/2)+1):n], function(x) density(x[,j])  )
+    ind_df <-do.call(rbind, (lapply(denst, function(dens) dens$y)  ) )
+    ind_df<- as.data.frame(t(ind_df))
+    densAffy <- density(exprSet_toplot[,paste0(j,"_affy")])
+    ind_df$affy <- densAffy$y
+    p<-violinPlot_Ylim(ind_df, mainTitle=paste0(name_toplot, " - pat = ",j),
+                       dotsize=0,binwidth=0.2,Xangle=45, ylo = -0.1, yhi = 0.5)      
+    print (p)
+  }
+dev.off()
 
-saveRDS(fsqn, file= "exprSet_FSQN.rds")
-rm(fsqn)
+saveRDS(exprSet_FSQN, file= "exprSet_FSQN.rds")
+rm(exprSet_FSQN)
 
 #===================
 
@@ -368,6 +510,42 @@ for (i in names(CombexprSet)) {
   exprSet_RBE[[i]]<-exprSet_RBE[[i]]-min(exprSet_RBE[[i]])
   print(paste0(i, " done"))
 }
+                                    
+ #  violin plot
+ #===============                          
+   
+  exprSet_toplot <- exprSet_RBE
+  name_toplot <-"RBE"
+  n <-ncol(exprSet_toplot)
+                    
+pdf(paste0("after_CPN_violinPlot_4genes_",name_toplot,".pdf"),height = 4, width = 6)       
+                   
+  for (j in random_genes){
+    
+    gene_df <-do.call(rbind, (lapply(exprSet_toplot[, ((n/2)+1):n], function(x) x[j,])))   #because "NOT affy samples" are at the second part of the dataframe
+    gene_df<- as.data.frame(t(gene_df))
+    gene_df$affy <-as.numeric(  exprSet_toplot[j,1:(n/2)]  )  # because affy samples are at the first part of the dataframe
+    p<-violinPlot(gene_df, mainTitle=paste0(name_toplot," - gene = ",j),
+                            dotsize=0,binwidth=0.2,Xangle=45)      
+    print (p)
+    
+  }
+dev.off()
+                                     
+ pdf(paste0("after_CPN_violinPlot_4sples_",name_toplot,".pdf"),height = 4, width = 6)   
+                    
+  for (j in random_sples){
+    
+    denst <- lapply(exprSet_toplot[, ((n/2)+1):n], function(x) density(x[,j])  )
+    ind_df <-do.call(rbind, (lapply(denst, function(dens) dens$y)  ) )
+    ind_df<- as.data.frame(t(ind_df))
+    densAffy <- density(exprSet_toplot[,paste0(j,"_affy")])
+    ind_df$affy <- densAffy$y
+    p<-violinPlot_Ylim(ind_df, mainTitle=paste0(name_toplot, " - pat = ",j),
+                       dotsize=0,binwidth=0.2,Xangle=45, ylo = -0.1, yhi = 0.5)      
+    print (p)
+  }
+dev.off()                                    
 
 saveRDS(exprSet_RBE, file= "exprSet_RBE.rds")
 rm(exprSet_RBE)
@@ -383,6 +561,43 @@ for (i in names(CombexprSet)){
   exprSet_Comb[[i]]<-sva::ComBat(as.matrix(CombexprSet[[i]]),batch = CombsampleAnnot[[i]][,batchCol],mod=NULL, par.prior = TRUE, prior.plots = FALSE)
   print(paste0(i, ": done"))
 }
+                                    
+                                    
+ #  violin plot
+ #===============                          
+   
+  exprSet_toplot <- exprSet_RBE
+  name_toplot <-"RBE"
+  n <-ncol(exprSet_toplot)
+                    
+pdf(paste0("after_CPN_violinPlot_4genes_",name_toplot,".pdf"),height = 4, width = 6)       
+                   
+  for (j in random_genes){
+    
+    gene_df <-do.call(rbind, (lapply(exprSet_toplot[, ((n/2)+1):n], function(x) x[j,])))   #because "NOT affy samples" are at the second part of the dataframe
+    gene_df<- as.data.frame(t(gene_df))
+    gene_df$affy <-as.numeric(  exprSet_toplot[j,1:(n/2)]  )  # because affy samples are at the first part of the dataframe
+    p<-violinPlot(gene_df, mainTitle=paste0(name_toplot," - gene = ",j),
+                            dotsize=0,binwidth=0.2,Xangle=45)      
+    print (p)
+    
+  }
+dev.off()
+                                     
+ pdf(paste0("after_CPN_violinPlot_4sples_",name_toplot,".pdf"),height = 4, width = 6)   
+                    
+  for (j in random_sples){
+    
+    denst <- lapply(exprSet_toplot[, ((n/2)+1):n], function(x) density(x[,j])  )
+    ind_df <-do.call(rbind, (lapply(denst, function(dens) dens$y)  ) )
+    ind_df<- as.data.frame(t(ind_df))
+    densAffy <- density(exprSet_toplot[,paste0(j,"_affy")])
+    ind_df$affy <- densAffy$y
+    p<-violinPlot_Ylim(ind_df, mainTitle=paste0(name_toplot, " - pat = ",j),
+                       dotsize=0,binwidth=0.2,Xangle=45, ylo = -0.1, yhi = 0.5)      
+    print (p)
+  }
+dev.off()                                     
 
 saveRDS(exprSet_Comb, file= "exprSet_Comb.rds")
 rm(exprSet_Comb)
@@ -408,6 +623,43 @@ for (i in names(CombexprSet)){
   
   print(paste0(i, ": done"))
 }
+                                    
+                                    
+ #  violin plot
+ #===============                          
+   
+  exprSet_toplot <- exprSet_RBE
+  name_toplot <-"RBE"
+  n <-ncol(exprSet_toplot)
+                    
+pdf(paste0("after_CPN_violinPlot_4genes_",name_toplot,".pdf"),height = 4, width = 6)       
+                   
+  for (j in random_genes){
+    
+    gene_df <-do.call(rbind, (lapply(exprSet_toplot[, ((n/2)+1):n], function(x) x[j,])))   #because "NOT affy samples" are at the second part of the dataframe
+    gene_df<- as.data.frame(t(gene_df))
+    gene_df$affy <-as.numeric(  exprSet_toplot[j,1:(n/2)]  )  # because affy samples are at the first part of the dataframe
+    p<-violinPlot(gene_df, mainTitle=paste0(name_toplot," - gene = ",j),
+                            dotsize=0,binwidth=0.2,Xangle=45)      
+    print (p)
+    
+  }
+dev.off()
+                                     
+ pdf(paste0("after_CPN_violinPlot_4sples_",name_toplot,".pdf"),height = 4, width = 6)   
+                    
+  for (j in random_sples){
+    
+    denst <- lapply(exprSet_toplot[, ((n/2)+1):n], function(x) density(x[,j])  )
+    ind_df <-do.call(rbind, (lapply(denst, function(dens) dens$y)  ) )
+    ind_df<- as.data.frame(t(ind_df))
+    densAffy <- density(exprSet_toplot[,paste0(j,"_affy")])
+    ind_df$affy <- densAffy$y
+    p<-violinPlot_Ylim(ind_df, mainTitle=paste0(name_toplot, " - pat = ",j),
+                       dotsize=0,binwidth=0.2,Xangle=45, ylo = -0.1, yhi = 0.5)      
+    print (p)
+  }
+dev.off()                                   
 
 save(exprSet_MM, file="exprSet_MM.rda")
 rm(exprSet_MM)
@@ -435,7 +687,43 @@ for (i in names(CombexprSet)){
   print(paste0(i, ": done"))
 }
 
-
+                                    
+ #  violin plot
+ #===============                          
+   
+  exprSet_toplot <- exprSet_GQ
+  name_toplot <-"GQ"
+  n <-ncol(exprSet_toplot)
+                    
+pdf(paste0("after_CPN_violinPlot_4genes_",name_toplot,".pdf"),height = 4, width = 6)       
+                   
+  for (j in random_genes){
+    
+    gene_df <-do.call(rbind, (lapply(exprSet_toplot[, ((n/2)+1):n], function(x) x[j,])))   #because "NOT affy samples" are at the second part of the dataframe
+    gene_df<- as.data.frame(t(gene_df))
+    gene_df$affy <-as.numeric(  exprSet_toplot[j,1:(n/2)]  )  # because affy samples are at the first part of the dataframe
+    p<-violinPlot(gene_df, mainTitle=paste0(name_toplot," - gene = ",j),
+                            dotsize=0,binwidth=0.2,Xangle=45)      
+    print (p)
+    
+  }
+dev.off()
+                                     
+ pdf(paste0("after_CPN_violinPlot_4sples_",name_toplot,".pdf"),height = 4, width = 6)   
+                    
+  for (j in random_sples){
+    
+    denst <- lapply(exprSet_toplot[, ((n/2)+1):n], function(x) density(x[,j])  )
+    ind_df <-do.call(rbind, (lapply(denst, function(dens) dens$y)  ) )
+    ind_df<- as.data.frame(t(ind_df))
+    densAffy <- density(exprSet_toplot[,paste0(j,"_affy")])
+    ind_df$affy <- densAffy$y
+    p<-violinPlot_Ylim(ind_df, mainTitle=paste0(name_toplot, " - pat = ",j),
+                       dotsize=0,binwidth=0.2,Xangle=45, ylo = -0.1, yhi = 0.5)      
+    print (p)
+  }
+dev.off() 
+                                    
 saveRDS(exprSet_GQ, file="exprSet_GQ.rds")
 rm(exprSet_GQ)
 
@@ -459,6 +747,43 @@ for (i in names(CombexprSet)){
   
   print(paste0(i, ": done"))
 }
+                                    
+                                    
+ #  violin plot
+ #===============                          
+   
+  exprSet_toplot <- exprSet_XPN
+  name_toplot <-"XPN"
+  n <-ncol(exprSet_toplot)
+                    
+pdf(paste0("after_CPN_violinPlot_4genes_",name_toplot,".pdf"),height = 4, width = 6)       
+                   
+  for (j in random_genes){
+    
+    gene_df <-do.call(rbind, (lapply(exprSet_toplot[, ((n/2)+1):n], function(x) x[j,])))   #because "NOT affy samples" are at the second part of the dataframe
+    gene_df<- as.data.frame(t(gene_df))
+    gene_df$affy <-as.numeric(  exprSet_toplot[j,1:(n/2)]  )  # because affy samples are at the first part of the dataframe
+    p<-violinPlot(gene_df, mainTitle=paste0(name_toplot," - gene = ",j),
+                            dotsize=0,binwidth=0.2,Xangle=45)      
+    print (p)
+    
+  }
+dev.off()
+                                     
+ pdf(paste0("after_CPN_violinPlot_4sples_",name_toplot,".pdf"),height = 4, width = 6)   
+                    
+  for (j in random_sples){
+    
+    denst <- lapply(exprSet_toplot[, ((n/2)+1):n], function(x) density(x[,j])  )
+    ind_df <-do.call(rbind, (lapply(denst, function(dens) dens$y)  ) )
+    ind_df<- as.data.frame(t(ind_df))
+    densAffy <- density(exprSet_toplot[,paste0(j,"_affy")])
+    ind_df$affy <- densAffy$y
+    p<-violinPlot_Ylim(ind_df, mainTitle=paste0(name_toplot, " - pat = ",j),
+                       dotsize=0,binwidth=0.2,Xangle=45, ylo = -0.1, yhi = 0.5)      
+    print (p)
+  }
+dev.off()                                     
 
 saveRDS(exprSet_XPN, file="exprSet_XPN.rds")
 
