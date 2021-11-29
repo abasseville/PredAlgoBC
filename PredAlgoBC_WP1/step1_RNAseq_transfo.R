@@ -286,3 +286,5 @@ for (j in random_ind){
 
 
 dev.off()
+                                  
+ # the end of RNA transfo - see step 2 for the crossplatform normalization (CPN) step
