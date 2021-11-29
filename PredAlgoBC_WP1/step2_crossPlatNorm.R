@@ -309,8 +309,8 @@ for (i in names(sampleAnnot_Rseq) ){
   print(paste0("ncol after merge:",ncol(CombexprSet[[i]])))
 }
 
-saveRDS(CombsampleAnnot,file="noCPN_sampleAnnot.rds")
-saveRDS(CombexprSet,file="noCPN_exprSet.rds")
+saveRDS(CombsampleAnnot,file="sampleAnnot_noCPN.rds")
+saveRDS(CombexprSet,file="exprSet_noCPN.rds")
 
 
 #========================
