@@ -54,7 +54,7 @@ batchCol<-"batch"
 
 # from https://rdrr.io/cran/gPCA/man/gPCA.batchdetect.html
 
-# attention, I change batch  to be numeric : if not, it gives wrong results!!!!!
+# attention, change batch to be numeric : if not, it gives wrong results!!!!!
 
 gPCA.batchdetect <-function (x, as.numeric(as.factor(batch)), filt = NULL, nperm = 1000, center = FALSE,
                              scaleY = FALSE, seed = NULL)
