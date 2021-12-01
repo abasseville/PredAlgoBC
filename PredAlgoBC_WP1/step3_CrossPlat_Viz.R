@@ -4,7 +4,7 @@
 #=================================================================================
 
 
-#         vizualisation and beginning of metric calculation
+#         STEP3  vizualisation and beginning of metric calculation
 
 
 #===========================================================================
@@ -205,13 +205,9 @@ colDendPlot= function(col_choice,sampleAnnot,clusters, plotTitle,labels_cex){
 #================================================
 
 corPltf3 <- list()     # correlation stat
-
 goodmatch<-list()      # dendro stat
-
 all_corcoef <-list()   # PCA stat
-
 delta_gPCA <-list()    #gPCA stat
-
 
 
 for (i in 1:length(fileNames)){
@@ -365,7 +361,7 @@ saveRDS(delta_gPCA, file= "delta_gPCA.rds")
 write.csv(goodmatch,"dend_goodmatch.csv")
 saveRDS(goodmatch, file="goodmatch.rds")
 
-# the end see step 4
+# the end   => see step 4 for metric calulation scaluing and heatmap
 
 
 
