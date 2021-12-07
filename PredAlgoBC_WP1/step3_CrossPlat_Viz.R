@@ -1,3 +1,5 @@
+
+
 #!/usr/bin/Rscript
 
 #=========================================================================
@@ -23,18 +25,20 @@ library(FactoMineR)
 # prepare to call file  =>  we can't load all because it is heavy and too slow
 
 fileNames <- list.files(full.names = T,pattern = "exprSet_",ignore.case=TRUE)
+fileNames <- fileNames[grep("_array|_Rsq", invert = T,fileNames)]  # remove not transforemd
+fileNames <- gsub("\\./|\\.rds","",fileNames)  # remove.rds to have nicer names
+saveRDS(fileNames,"fileNames.rds")   
 
 # should get :
-# exprSet_noCPN.rds
-# exprSet_TDM.rds
-# exprSet_FSQN.rds
-# exprSet_RBE.rds
-# exprSet_Comb.rds
-# exprSet_MM.rds
-# exprSet_GQ.rds
-# exprSet_XPN.rds
+# exprSet_noCPN
+# exprSet_TDM
+# exprSet_FSQN
+# exprSet_RBE
+# exprSet_Comb
+# exprSet_MM
+# exprSet_GQ
+# exprSet_Zsc
 
-fileNames <-gsub(".rds","",fileNames)   # remove.rds to have nicer names
 
 sampleAnnot <- readRDS("sampleAnnot_noCPN.rds")
 condCol<-"subtype"   
@@ -48,20 +52,21 @@ batchCol<-"batch"
 
 
 
-# custom gPCA function
+# adapted gPCA function from https://rdrr.io/cran/gPCA/man/gPCA.batchdetect.html
 #=======================
 
+# attention, initial function has been modified to have batch information in numeric format.
+# If batch is not numeric,  it gives wrong results!!!!!
 
-# from https://rdrr.io/cran/gPCA/man/gPCA.batchdetect.html
 
-# attention, change batch to be numeric : if not, it gives wrong results!!!!!
 
-gPCA.batchdetect <-function (x, as.numeric(as.factor(batch)), filt = NULL, nperm = 1000, center = FALSE,
+gPCA.batchdetect <-function (x, batch, filt = NULL, nperm = 1000, center = FALSE,
                              scaleY = FALSE, seed = NULL)
 {
   if (!is.null(seed)) {
     set.seed(seed)
   }
+  batch = as.numeric(as.factor(batch))
   permute <- matrix(NA, ncol = length(batch), nrow = 50000)
   for (j in 1:50000) {
     permute[j, ] <- sample(batch, replace = FALSE)
@@ -175,6 +180,38 @@ gPCA.batchdetect <-function (x, as.numeric(as.factor(batch)), filt = NULL, nperm
 # dendrogram plot 
 #==================
 
+#cuttree by pair
+
+cutree_bypair <-function(dend, talk= F){
+  require("dendextend")
+  labels_node <- dend %>%get_nodes_attr("label")
+  results <-list()
+  for (i in 1:(length(labels_node)-1)){
+    
+    if ( if  (i==1){
+      !is.na(labels_node[[i+1]])&!is.na(labels_node[[i]])
+    } else{
+      is.na(labels_node[[i-1]])&!is.na(labels_node[[i]])& !is.na(labels_node[[i+1]])
+      
+    }
+    )     {
+      if (talk==T){print(paste0("1er IF is true - loop ",i))}
+      results[[i]] <- c(i,i)
+      names(results[[i]] ) <- c(labels_node[[i]],labels_node[[i+1]])
+    } else {
+      results[[i]]  <- 0
+      names(results[[i]] ) <- c(labels_node[[i]])
+      if (talk==T){print(paste0("1er IF is false - loop ",i))}
+    }
+  }
+  results <-unlist(results)
+  results <-results[!is.na(names(results))]
+  results <-data.frame(keyName=names(results), cluster=results, row.names=NULL) #to keep num num
+  results <- results[results$cluster!=0,]  #new code to test...
+  # results <-aggregate(.~keyName, results,  FUN = sum)   #...instead of this code but made fake positive with double 0
+  return(results)
+}
+
 colDendPlot= function(col_choice,sampleAnnot,clusters, plotTitle,labels_cex){
   variable <- as.data.frame(col_choice)
   variable$ID<-row.names(sampleAnnot)
@@ -204,125 +241,207 @@ colDendPlot= function(col_choice,sampleAnnot,clusters, plotTitle,labels_cex){
 #==========================
 #================================================
 
-corPltf3 <- list()     # correlation stat
+corPltf_all <- list()     # correlation stat
 goodmatch<-list()      # dendro stat
-all_corcoef <-list()   # PCA stat
-delta_gPCA <-list()    #gPCA stat
+corcoef_3D <-list()   # PCA stat
+delta_gPCA_all <-list()    # gPCA stat
 
 
-for (i in 1:length(fileNames)){
+for (i in fileNames){
+  
+  exprSet_toplot <- readRDS(paste0(i,".rds"))
+  
+  
+  
+  #=======================
 
-  exprSet_toplot <- readRDS(paste0(fileNames,".rds"))
-  
-  
-#=======================  
-  
   # correlation
-  
-#======================
-  
-  
-    
-    nbSpl <- ncol(exprSet_toplot[[1]])/2
-    
-    corPltf2 <- list()
-    for (j in names(exprSet_toplot)){
-      corPltf <- list()
-      for (i in (1:nbSpl)){
-        corPltf[[i]]  <- cor(exprSet_toplot[[j]][,i],exprSet_toplot[[j]][,nbSpl+ i])
-        
-      }
-      
-      corPltf2[[j]] <-unlist(corPltf)
-      print(paste0(j,  ": done"))
+
+  #======================
+
+
+
+  nbSpl <- ncol(exprSet_toplot[[1]])/2
+
+  corPltf2 <- list()
+  for (j in names(exprSet_toplot)){
+    corPltf <- list()
+    for (k in (1:nbSpl)){
+      corPltf[[k]]  <- cor(exprSet_toplot[[j]][,k],exprSet_toplot[[j]][,nbSpl+ k])
+
     }
-    
-    print(paste0(k,  ": done"))
-    corPltf3[[i]] <-as.data.frame(do.call(cbind, corPltf2))
-    names(corPltf3[[i])<-paste0(fileNames,"_",names(corPltf3[[i]]))
-    rownames(corPltf3[[i]]) <- colnames(exprSet_toplot[[1]])[(nbSpl+1):(nbSpl*2)]
-    
-  
-  
-  #=======================  
-  
+
+    corPltf2[[j]] <-unlist(corPltf)
+    print(paste0(j,  ": corr calculation done"))
+  }
+
+  corPltf_all[[i]] <-as.data.frame(do.call(cbind, corPltf2))
+  names(corPltf_all[[i]])<-paste0(i,"_",names(corPltf_all[[i]]))
+  rownames(corPltf_all[[i]]) <- colnames(exprSet_toplot[[1]])[(nbSpl+1):(nbSpl*2)]
+
+
+
+  #=======================
+
   # dendrogramm
-  
-  #====================== 
-  
-    
-  pdf(paste0("dend_aftCPN_",fileNames,".pdf"),width = 20, height = 12)
-    par(mfrow=c(3,1))
-    
+
+  #======================
+
+
+  pdf(paste0("dend_aftCPN__",i,".pdf"),width = 20, height = 12)
+  par(mfrow=c(2,1))
+
   nb_mismatch <- list()
   perc_goodmach  <- list()
-    
+
   for (k in names(exprSet_toplot)){
 
-  distance <- dist(t(exprSet_toplot[[k]]),method="euclidian")
-  clusters <- hclust(distance)
+    distance <- dist(t(exprSet_toplot[[k]]),method="euclidian")
+    clusters <- hclust(distance)
 
-  # calculate pair matching
+    # calculate pair matching
     dend <- as.dendrogram(clusters)
     cutree_cell <-cutree_bypair(dend, talk=F)
     rownames(cutree_cell)<-cutree_cell$keyName
-    cutree_cell$keyName <-gsub("_affy","",cutree_cell$keyName)
+    cutree_cell$keyName <-gsub("_array|_arr","",cutree_cell$keyName)
     cutree_cell$dupli <-duplicated(cutree_cell) | duplicated(cutree_cell, fromLast = TRUE)
     nb_mismatch[[k]] <- (length ((cutree_cell$dupli)[cutree_cell$dupli == FALSE]))/2
     nb_goodmatch <- (length ((cutree_cell$dupli)[cutree_cell$dupli == TRUE]))/2
     perc_goodmach[[k]] <- round(nb_goodmatch*100/(nrow(sampleAnnot[[1]]) /2),digits = 1)
 
 
+    colDendPlot= function(col_choice,DendsampleAnnot,clusters, plotTitle,labels_cex){
+      variable <- as.data.frame(col_choice)
+      variable$ID<-row.names(DendsampleAnnot)
+      dend <- as.dendrogram(clusters)
+      ordered_names <- as.data.frame(dendextend::cutree(dend, 1, order_clusters_as_data = FALSE))
+      ordered_names$ID<-rownames(ordered_names)
+      dend_col<-merge(ordered_names,variable,by="ID", sort=FALSE)  #join est sur plyr
+      dend_col<-dend_col$col_choice
+      dend<-hang.dendrogram(dend, hang=0.1)
+      dendCol<-rainbow(nlevels(dend_col))
+      names(dendCol)<-levels(dend_col)
+      colorsdend<-dendCol[dend_col]
+      labels_colors(dend)<-colorsdend
+      labels_cex(dend)<-labels_cex
+      #hang.dendrogram(dend, hang = 0.1, cex=0.3,main=plotTitle)
+      plot(dend, cex=0.5,main=plotTitle)
+    }
+
+
+    # plot dendro
+
+    for (j in c(batchCol,condCol) ){
+      col_choice<- as.factor(sampleAnnot[[1]][,j])
+      colDendPlot(col_choice,DendsampleAnnot=sampleAnnot[[1]],clusters,
+                  plotTitle=paste0(k,"-",i," by ", j),labels_cex=0.5)
+    }
+
+    print(paste0(i,"-", k ,": dendrogram done"))
+
+  } # k end
+
+  goodmatch[[i]] <- data.frame(nb_mismatch=unlist(nb_mismatch),
+                               perc_goodmach= unlist(perc_goodmach),
+                               row.names=paste0(i,"_", names(nb_mismatch)) )
+
+  dev.off()
+
+
   
-  # plot dendro
-    
-  for (j in c(batchCol,condCol) ){
-    col_choice<- as.factor(sampleAnnot[[1]][,j])
-    colDendPlot(col_choice,sampleAnnot[[1]],clusters, 
-                plotTitle=paste0(k,"-",name_toplot,"dataset by ", j),labels_cex=0.5)
-  }
-    
-    print(paste0(fileNames,"-", k ,": OK"))
-    
-  } # k end 
-    
-  goodmatch[[i]] <- data.frame(nb_mismatch=unlist(nb_mismatch), perc_goodmach= unlist(perc_goodmach), row.names=gsub(".rds","", filenames))
-    
-  dev.off() 
+  #====================
   
-
-
-#====================
-
-# PCA
-
-#====================
+  # PCA
   
-pdf(paste0("PCA_aftCPN_",fileNames,".pdf"),width = 12, height = 10)
+  #====================
+  
+  pdf(paste0("PCA_aftCPN__",i,".pdf"),width = 6, height = 5)
   
   corcoef <- list()
   for (k in names(exprSet_toplot)){
+    
+    allintable <-cbind(t(exprSet_toplot[[k]]),sampleAnnot[[k]][,c(batchCol,condCol)])
+    pca<- FactoMineR:: PCA(allintable, scale.unit=TRUE, ncp=5 ,
+                           quali.sup= (ncol(allintable)-1):ncol(allintable)  , graph=F)
+    p_batchCol <- FactoMineR:: plot.PCA(pca, axes=c(1, 2), choix="ind", 
+                                        habillage=(ncol(allintable)-1),label="none",title = paste0(k," - ", i) )  #plot colored accorded to batch1 (A and B) +barycentre
+    p_condCol <- FactoMineR::plot.PCA(pca, axes=c(1, 2), choix="ind", 
+                                      habillage=ncol(allintable),label="none",title = paste0(k," - ", i)) 
+    corcoef[[k]] <-dimdesc(pca, axes=c(1,2,3), proba = 1)   #proba no selected to have all the number
+    print(p_batchCol)
+    print(p_condCol)
+  }
   
-  allintable <-cbind(t(exprSet_toplot[[k]]),sampleAnnot[[1]][,c(batchCol,condCol)])
-  pca<- FactoMineR:: PCA(allintable, scale.unit=TRUE, ncp=5 ,
-                              quali.sup= (ncol(allintable)-1):ncol(allintable)  , graph=F)
-  FactoMineR:: plot.PCA(pca, axes=c(1, 2), choix="ind", habillage=(ncol(allintable)-1),label="none",title = paste0(k," - ", i) )  #plot colored accorded to batch1 (A and B) +barycentre
-  FactoMineR::plot.PCA(pca, axes=c(1, 2), choix="ind", habillage=ncol(allintable),label="none",title = paste0(k," - ", i)) 
-  corcoef[[k]] <-dimdesc(pca, axes=c(1,2,3), proba = 1)   #proba no selected to have all the number
-  print(paste0(i,"_",k , " : PCA done"))
-}
-all_corcoef[[i]] <- corcoef
+  dev.off()
+  
 
-dev.off()
+  corcoef_dim1 <- list()
+  corcoef_dim2 <- list()
+  corcoef_dim3 <- list()
+  for (j in names(exprSet_toplot)){
 
+      corcoef_dim1 [[j]] <- corcoef[[j]]$Dim.1$quali
+      corcoef_dim1 [[j]] <- round(corcoef_dim1 [[j]],digits = 3)
+      rownames(corcoef_dim1 [[j]]) <- paste("dim1" ,i,j,rownames(corcoef_dim1[[j]]),  sep = "_")
+      
+      corcoef_dim2[[j]] <- corcoef[[j]]$Dim.2$quali
+      corcoef_dim2 [[j]] <- round(corcoef_dim2 [[j]],digits = 3)
+      rownames(corcoef_dim2 [[j]]) <- paste("dim2" ,i,j,rownames(corcoef_dim2[[j]]),  sep = "_")
+      
+      corcoef_dim3[[j]] <- corcoef[[j]]$Dim.3$quali
+      corcoef_dim3 [[j]] <- round(corcoef_dim3 [[j]],digits = 3)
+      rownames(corcoef_dim3 [[j]]) <- paste("dim3" ,i,j,rownames(corcoef_dim3[[j]]),  sep = "_")
+    }
+    
+    
+    for (k in names(corcoef_dim1)){
+      corcoef_dim1[[k]]<- corcoef_dim1[[k]][order(rownames(corcoef_dim1[[k]])),]
+      corcoef_dim2[[k]]<- corcoef_dim2[[k]][order(rownames(corcoef_dim2[[k]])),]
+      corcoef_dim3[[k]]<- corcoef_dim3[[k]][order(rownames(corcoef_dim3[[k]])),]
+    }
+    
+    corcoef_dim1<- as.data.frame(do.call("rbind", corcoef_dim1))
+    corcoef_dim2<- as.data.frame(do.call("rbind", corcoef_dim2))
+    corcoef_dim3<- as.data.frame(do.call("rbind", corcoef_dim3))    
+    
+    
+    # prepare table corr
+    corcoef_dims <- cbind(corcoef_dim1[,"R2"], corcoef_dim2[,"R2"],corcoef_dim3[,"R2"]) 
+    rownames(corcoef_dims) <- gsub("dim1_","",rownames(corcoef_dim1))
+    colnames(corcoef_dims)<- c("PC1", "PC2", "PC3")
+    
+    corcoef_dims_batch<- corcoef_dims[grep(paste0("_",batchCol), rownames(corcoef_dims)),] 
+    rownames(corcoef_dims_batch) <-  gsub(paste0("_",batchCol),"",rownames(corcoef_dims_batch))
+    corcoef_dims_cond<- corcoef_dims[grep(paste0("_",condCol), rownames(corcoef_dims)),] 
+    rownames(corcoef_dims_cond) <-  gsub(paste0("_",condCol),"",rownames(corcoef_dims_cond))
+    
+  
+    df <- cbind(as.data.frame.table(corcoef_dims_cond, responseName = "cor.cond"), cor.batch = c(corcoef_dims_batch))
+    
+    
+    p<-ggplot(df, aes(x=Var2, y=Var1, col = cor.batch, size = cor.cond)) + 
+      geom_point() + ggtitle(i) +
+      scale_color_gradientn(limits=c(0,1),colors =c("#5183cf","#cf2b0a"),
+                            breaks=c(0,0.5,1),labels=c("0","0.5","1") ) +           
+      scale_size(name = waiver(), limits=c(0,1)) +     #mettre la size_legend à la scale désirée
+      xlab("") + ylab("") + theme_minimal()
+    
+    pdf(paste0("PCAcorcoeff_aftCPN__",i,".pdf"),width = 5, height = 4)
+    print(p)
+    dev.off()
 
-#==========================
-
-#   gPCA
-
-#=============================
-
-
+    
+    corcoef_3D[[i]] <- list(PC1=corcoef_dim1,PC2=corcoef_dim2,PC3=corcoef_dim3)
+  
+    print ("PCA done")
+  
+  #==========================
+  
+  #   gPCA
+  
+  #=============================
+  
+  
   delta_gPCA <- do.call(rbind,lapply(exprSet_toplot, function(x) {
     tryCatch({
       out_batch<-gPCA.batchdetect(t(x),batch=as.numeric(as.factor(sampleAnnot[[1]][,batchCol])),center=FALSE,
@@ -338,30 +457,44 @@ dev.off()
   }
   ))
   
-  rownames(delta_gPCA) <-paste0(fileNames,"_",rownames(delta_gPCA))
-  delta_gPCA[[i]] <-delta_gPCA
-  print(paste0(i,  ": done"))
+  rownames(delta_gPCA) <-paste0(i,"_",rownames(delta_gPCA))
+  delta_gPCA_all[[i]] <-delta_gPCA
+ 
   
-
-
-
-#=============================
-
-# collect results at the end
-
-#=============================
-
-
+  
+  
+  
+  
+  
+   print(paste0("=====================================  ",i,  ": done"))
+  
+  
+  
+  
+  #=============================
+  
+  # collect results at the end
+  
+  #=============================
+  
+  
 } 
 
 
-delta_gPCA <-as.data.frame(do.call(rbind, delta_gPCA))
-saveRDS(delta_gPCA, file= "delta_gPCA.rds")
+write.csv(goodmatch,"dend_goodmatch.csv")    # dendro stat
+saveRDS(goodmatch, file="goodmatch.rds")      # dendro stat
 
-write.csv(goodmatch,"dend_goodmatch.csv")
-saveRDS(goodmatch, file="goodmatch.rds")
+saveRDS(corPltf_all, file="corPltf_all.rds")   # correlation stat
+
+saveRDS(corcoef_3D, file="corcoef_3D.rds")    # PCA stat
+
+delta_gPCA_all <-as.data.frame(do.call(rbind, delta_gPCA_all))
+rownames(delta_gPCA_all) <- gsub(".*\\.", "", rownames(delta_gPCA_all))  # remove what is before the period
+saveRDS(delta_gPCA_all, file= "delta_gPCA_all.rds")    # gPCA stat
+
+
+
 
 # the end   => see step 4 for metric calulation scaluing and heatmap
-
 
 
