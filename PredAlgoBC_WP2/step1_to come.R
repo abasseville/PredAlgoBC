@@ -1,11 +1,11 @@
 
-#=======================================================================================
+#==============================================================================================================
 
 
-#                WP2 - STEP one  /// download, normalize and merge Affymetrix raw data
+#                WP2 - STEP TWO  /// download, normalize and merge Affymetrix raw data  (exprSet preparation)
 
 
-#=========================================================================================
+#=====================================================================================================================
 
 library(R.utils)  # for gunzip
 library(simpleaffy)  # for read and noramlization affy
@@ -91,11 +91,11 @@ saveRDS(exprSet.logs, file=paste0(i,".rds")
 
 #=======================================================
         
-# Download gene information for homospaiens
+# Download gene information for homo sapiens
 ensembl2 <- biomaRt::useEnsembl(biomart="ensembl", dataset="hsapiens_gene_ensembl")        
 biomaRt::listAttributes(mart=ensembl2)  
         
-#select the column wanted
+# Select the column wanted
 gene_equi<-biomaRt::getBM(mart=ensembl2,attributes=c("hgnc_symbol","affy_hg_u133_plus_2" ))          
 head(gene_equi)        
         
