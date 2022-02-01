@@ -6,7 +6,7 @@
 
 
 
-#===========================     WORK IN  PROGRESS  ===========================================
+# ===========================     WORK IN  PROGRESS  ===========================================
 
 
 
@@ -15,7 +15,7 @@
 
 
 
-#==============================================================================================================
+# ==============================================================================================================
 
 
 
@@ -610,119 +610,124 @@ saveRDS(Pawitan,file= "PawitanAll_process.rds")
 sampleAnnot3[["Pawitan_GSE1456"]][1:10,]
 
 
-#sample annot 20        "Rody"  
+#======================================
+#     Rody_GSE31519
 #========================================
 
-sampleAnnot3[[20]]<- data.frame(batch     = rep(names(sampleAnnot)[[19]],nrow(sampleAnnot[[19]])),
-                                platform  = sampleAnnot[[19]]$"platform_id" ,
-                                relapse   = sampleAnnot[[19]]$"characteristics_ch1.5" ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[[19]]$"event-free interval (months):ch1"))),digits=1) ,    # month
-                                ER        = rep("Neg",nrow(sampleAnnot[[19]])) ,
-                                PR        = rep("Neg",nrow(sampleAnnot[[19]])) ,
-                                HER2      = rep("Neg",nrow(sampleAnnot[[19]])) ,
-                                Treatment = sampleAnnot[[19]]$"chemotherapy treatment (yes/no):ch1",
-                                Treatment2 = sampleAnnot[[19]]$"cohort:ch1" ,
-                                age      = rep(NA,nrow(sampleAnnot[[19]])) ,
-                                row.names = rownames(sampleAnnot[[19]]),
+sampleAnnot3[["Rody_GSE31519"]]<- data.frame(batch     = rep(names(sampleAnnot)[["Rody_GSE31519"]],nrow(sampleAnnot[["Rody_GSE31519"]])),
+                                platform  = sampleAnnot[["Rody_GSE31519"]]$"platform_id" ,
+                                relapse   = sampleAnnot[["Rody_GSE31519"]]$"characteristics_ch1.5" ,
+                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Rody_GSE31519"]]$"event-free interval (months):ch1"))),digits=1) ,    # month
+                                ER        = rep("Neg",nrow(sampleAnnot[["Rody_GSE31519"]])) ,
+                                PR        = rep("Neg",nrow(sampleAnnot[["Rody_GSE31519"]])) ,
+                                HER2      = rep("Neg",nrow(sampleAnnot[["Rody_GSE31519"]])) ,
+                                Treatment = sampleAnnot[["Rody_GSE31519"]]$"chemotherapy treatment (yes/no):ch1",
+                                Treatment2 = sampleAnnot[["Rody_GSE31519"]]$"cohort:ch1" ,
+                                age      = rep(NA,nrow(sampleAnnot[["Rody_GSE31519"]])) ,
+                                row.names = rownames(sampleAnnot[["Rody_GSE31519"]]),
                                 stringsAsFactors = F)
 
-sampleAnnot3[[20]][1:10,]
-table(sampleAnnot3[[20]]$relapse)
-sampleAnnot3[[20]]$relapse <-gsub("event \\(1: yes, 0: no\\): ","",sampleAnnot3[[20]]$relapse )
-sampleAnnot3[[20]]$relapse <-gsub("cohort: FRA|cohort: HH|neoadjuvant chemotherapy \\(yes\\/no\\): NO",NA,sampleAnnot3[[20]]$relapse )
-sampleAnnot3[[20]]$relapse[grep("0|1",sampleAnnot3[[20]]$relapse,invert = T)] <- NA
-table(sampleAnnot3[[20]]$relapse)
+sampleAnnot3[["Rody_GSE31519"]][1:10,]
+table(sampleAnnot3[["Rody_GSE31519"]]$relapse)
+sampleAnnot3[["Rody_GSE31519"]]$relapse <-gsub("event \\(1: yes, 0: no\\): ","",sampleAnnot3[["Rody_GSE31519"]]$relapse )
+sampleAnnot3[["Rody_GSE31519"]]$relapse <-gsub("cohort: FRA|cohort: HH|neoadjuvant chemotherapy \\(yes\\/no\\): NO",NA,sampleAnnot3[["Rody_GSE31519"]]$relapse )
+sampleAnnot3[["Rody_GSE31519"]]$relapse[grep("0|1",sampleAnnot3[["Rody_GSE31519"]]$relapse,invert = T)] <- NA
+table(sampleAnnot3[["Rody_GSE31519"]]$relapse)
 
-table(sampleAnnot3[[20]]$Treatment)
-sampleAnnot3[[20]]$Treatment <-gsub("NO","surg_o_surg_radio",sampleAnnot3[[20]]$Treatment )
-sampleAnnot3[[20]]$Treatment <-gsub("YES","chemo_only",sampleAnnot3[[20]]$Treatment )
-sampleAnnot3[[20]][1:10,]
-sampleAnnot3[[20]]$Treatment2<-NULL
-sampleAnnot3[[20]][1:10,]
+table(sampleAnnot3[["Rody_GSE31519"]]$Treatment)
+sampleAnnot3[["Rody_GSE31519"]]$Treatment <-gsub("NO","surg_o_surg_radio",sampleAnnot3[["Rody_GSE31519"]]$Treatment )
+sampleAnnot3[["Rody_GSE31519"]]$Treatment <-gsub("YES","chemo_only",sampleAnnot3[["Rody_GSE31519"]]$Treatment )
+sampleAnnot3[["Rody_GSE31519"]][1:10,]
+sampleAnnot3[["Rody_GSE31519"]]$Treatment2<-NULL
+sampleAnnot3[["Rody_GSE31519"]][1:10,]
 
 saveRDS(sampleAnnot3,file= "040821_sampleAnnot_Mod.rds")
 
 
-#sample annot 9   "Schmidt"
+#============================
+#   Schmidt_GSE11121
 #==========================
 
-sampleAnnot3[[9]]<- data.frame(batch     = rep(names(sampleAnnot2)[[9]],nrow(sampleAnnot2[[9]])),
-                                platform  = sampleAnnot2[[9]]$platform_id ,
-                                relapse   = sampleAnnot2[[9]]$`e.dmfs:ch1` ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[[9]]$"t.dmfs:ch1"))),digits=1) ,    # month
-                                ER        = rep(NA,nrow(sampleAnnot2[[9]])),
-                                PR        = rep(NA,nrow(sampleAnnot2[[9]])),
-                                HER2      = rep(NA,nrow(sampleAnnot2[[9]])),
-                                Treatment = rep("surg_o_surg_radio",nrow(sampleAnnot2[[9]])),
-                                age      =  rep(NA,nrow(sampleAnnot2[[9]])),
-                                row.names = rownames(sampleAnnot2[[9]]),
+sampleAnnot3[["Schmidt_GSE11121"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Schmidt_GSE11121"]],nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                platform  = sampleAnnot2[["Schmidt_GSE11121"]]$platform_id ,
+                                relapse   = sampleAnnot2[["Schmidt_GSE11121"]]$`e.dmfs:ch1` ,
+                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Schmidt_GSE11121"]]$"t.dmfs:ch1"))),digits=1) ,    # month
+                                ER        = rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                PR        = rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                HER2      = rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                Treatment = rep("surg_o_surg_radio",nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                age      =  rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                row.names = rownames(sampleAnnot2[["Schmidt_GSE11121"]]),
                                 stringsAsFactors = F)
 
-sampleAnnot3[[9]][1:10,]
-table(sampleAnnot3[[9]]$relapse)
+sampleAnnot3[["Schmidt_GSE11121"]][1:10,]
+table(sampleAnnot3[["Schmidt_GSE11121"]]$relapse)
 
 
-#sample annot 12   "Sircoulomb"
+#=================================
+#    Sircoulomb_GSE17907
 #===============================
 
-sampleAnnot3[[12]]<- data.frame(batch     = rep(names(sampleAnnot2)[[12]],nrow(sampleAnnot2[[12]])),
-                                platform  = sampleAnnot2[[12]]$platform_id ,
-                                relapse   = sampleAnnot2[[12]]$`mfs:ch1` ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[[12]]$`mfsdel (month):ch1`))),digits=1) ,    # month
-                                ER        = sampleAnnot2[[12]]$`er ihc status:ch1` ,
-                                PR        = sampleAnnot2[[12]]$`pr ihc status:ch1` ,
-                                HER2      = sampleAnnot2[[12]]$`erbb2 ihc status:ch1` ,
-                                Treatment = rep(NA,nrow(sampleAnnot2[[12]])),
-                                age      = sampleAnnot2[[12]]$`age of diagnosis (year):ch1` ,
-                                row.names = rownames(sampleAnnot2[[12]]),
+sampleAnnot3[["Sircoulomb_GSE17907"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Sircoulomb_GSE17907"]],nrow(sampleAnnot2[["Sircoulomb_GSE17907"]])),
+                                platform  = sampleAnnot2[["Sircoulomb_GSE17907"]]$platform_id ,
+                                relapse   = sampleAnnot2[["Sircoulomb_GSE17907"]]$`mfs:ch1` ,
+                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Sircoulomb_GSE17907"]]$`mfsdel (month):ch1`))),digits=1) ,    # month
+                                ER        = sampleAnnot2[["Sircoulomb_GSE17907"]]$`er ihc status:ch1` ,
+                                PR        = sampleAnnot2[["Sircoulomb_GSE17907"]]$`pr ihc status:ch1` ,
+                                HER2      = sampleAnnot2[["Sircoulomb_GSE17907"]]$`erbb2 ihc status:ch1` ,
+                                Treatment = rep(NA,nrow(sampleAnnot2[["Sircoulomb_GSE17907"]])),
+                                age      = sampleAnnot2[["Sircoulomb_GSE17907"]]$`age of diagnosis (year):ch1` ,
+                                row.names = rownames(sampleAnnot2[["Sircoulomb_GSE17907"]]),
                                 stringsAsFactors = F)
 
-sampleAnnot3[[12]][1:10,]
-table(sampleAnnot3[[12]]$relapse)
-sampleAnnot3[[12]]$relapse <- gsub("--",NA,sampleAnnot3[[12]]$relapse)
+sampleAnnot3[["Sircoulomb_GSE17907"]][1:10,]
+table(sampleAnnot3[["Sircoulomb_GSE17907"]]$relapse)
+sampleAnnot3[["Sircoulomb_GSE17907"]]$relapse <- gsub("--",NA,sampleAnnot3[["Sircoulomb_GSE17907"]]$relapse)
 
-table(sampleAnnot3[[12]]$ER)
-sampleAnnot3[[12]]$ER <- gsub("--",NA,sampleAnnot3[[12]]$ER)
-sampleAnnot3[[12]]$ER<- gsub("neg","Neg",sampleAnnot3[[12]]$ER)
-sampleAnnot3[[12]]$ER<- gsub("pos","Pos",sampleAnnot3[[12]]$ER)
+table(sampleAnnot3[["Sircoulomb_GSE17907"]]$ER)
+sampleAnnot3[["Sircoulomb_GSE17907"]]$ER <- gsub("--",NA,sampleAnnot3[["Sircoulomb_GSE17907"]]$ER)
+sampleAnnot3[["Sircoulomb_GSE17907"]]$ER<- gsub("neg","Neg",sampleAnnot3[["Sircoulomb_GSE17907"]]$ER)
+sampleAnnot3[["Sircoulomb_GSE17907"]]$ER<- gsub("pos","Pos",sampleAnnot3[["Sircoulomb_GSE17907"]]$ER)
 
-table(sampleAnnot3[[12]]$PR)
-sampleAnnot3[[12]]$PR <- gsub("--",NA,sampleAnnot3[[12]]$PR)
-sampleAnnot3[[12]]$PR<- gsub("neg","Neg",sampleAnnot3[[12]]$PR)
-sampleAnnot3[[12]]$PR<- gsub("pos","Pos",sampleAnnot3[[12]]$PR)
+table(sampleAnnot3[["Sircoulomb_GSE17907"]]$PR)
+sampleAnnot3[["Sircoulomb_GSE17907"]]$PR <- gsub("--",NA,sampleAnnot3[["Sircoulomb_GSE17907"]]$PR)
+sampleAnnot3[["Sircoulomb_GSE17907"]]$PR<- gsub("neg","Neg",sampleAnnot3[["Sircoulomb_GSE17907"]]$PR)
+sampleAnnot3[["Sircoulomb_GSE17907"]]$PR<- gsub("pos","Pos",sampleAnnot3[["Sircoulomb_GSE17907"]]$PR)
 
-table(sampleAnnot3[[12]]$HER2)
-sampleAnnot3[[12]]$HER2 <- gsub("--",NA,sampleAnnot3[[12]]$HER2)
-sampleAnnot3[[12]]$HER2<- gsub("neg","Neg",sampleAnnot3[[12]]$HER2)
-sampleAnnot3[[12]]$HER2<- gsub("pos","Pos",sampleAnnot3[[12]]$HER2)
-sampleAnnot3[[12]][1:10,]
+table(sampleAnnot3[["Sircoulomb_GSE17907"]]$HER2)
+sampleAnnot3[["Sircoulomb_GSE17907"]]$HER2 <- gsub("--",NA,sampleAnnot3[["Sircoulomb_GSE17907"]]$HER2)
+sampleAnnot3[["Sircoulomb_GSE17907"]]$HER2<- gsub("neg","Neg",sampleAnnot3[["Sircoulomb_GSE17907"]]$HER2)
+sampleAnnot3[["Sircoulomb_GSE17907"]]$HER2<- gsub("pos","Pos",sampleAnnot3[["Sircoulomb_GSE17907"]]$HER2)
+sampleAnnot3[["Sircoulomb_GSE17907"]][1:10,]
 
 
-#sample annot 13    symmans
+#=================================
+#       Symmans_GSE17705
 #================================
 
-sampleAnnot3[[13]]<- data.frame(batch     = rep(names(sampleAnnot2)[[13]],nrow(sampleAnnot2[[13]])),
-                                platform  = sampleAnnot2[[13]]$platform_id ,
-                                relapse   = sampleAnnot2[[13]]$`distant relapse (1=dr, 0 censored):ch1` ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[[13]]$`event time (years):ch1`)))*12,digits=1) ,    #year -> month
-                                ER        = sampleAnnot2[[13]]$`estrogen receptor (er) status:ch1` ,
-                                PR        = rep(NA,nrow(sampleAnnot2[[13]])),
-                                HER2      = rep(NA,nrow(sampleAnnot2[[13]])),
-                                Treatment = sampleAnnot2[[13]]$`endocrine therapy:ch1`,
-                                age      = rep(NA,nrow(sampleAnnot2[[13]])),
-                                row.names = rownames(sampleAnnot2[[13]]),
+sampleAnnot3[["Symmans_GSE17705"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Symmans_GSE17705"]],nrow(sampleAnnot2[["Symmans_GSE17705"]])),
+                                platform  = sampleAnnot2[["Symmans_GSE17705"]]$platform_id ,
+                                relapse   = sampleAnnot2[["Symmans_GSE17705"]]$`distant relapse (1=dr, 0 censored):ch1` ,
+                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Symmans_GSE17705"]]$`event time (years):ch1`)))*12,digits=1) ,    #year -> month
+                                ER        = sampleAnnot2[["Symmans_GSE17705"]]$`estrogen receptor (er) status:ch1` ,
+                                PR        = rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
+                                HER2      = rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
+                                Treatment = sampleAnnot2[["Symmans_GSE17705"]]$`endocrine therapy:ch1`,
+                                age      = rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
+                                row.names = rownames(sampleAnnot2[["Symmans_GSE17705"]]),
                                 stringsAsFactors = F)
 
-sampleAnnot3[[13]][1:10,]
-table(sampleAnnot3[[13]]$relapse)
-table(sampleAnnot3[[13]]$ER)
-sampleAnnot3[[13]]$ER <-gsub("ER\\+","Pos",sampleAnnot3[[13]]$ER)
-table(sampleAnnot3[[13]]$Treatment)
-sampleAnnot3[[13]]$Treatment <-gsub("Tamoxifen treatment for 5 years","Tam",sampleAnnot3[[13]]$Treatment)
-sampleAnnot3[[13]][1:10,]
+sampleAnnot3[["Symmans_GSE17705"]][1:10,]
+table(sampleAnnot3[["Symmans_GSE17705"]]$relapse)
+table(sampleAnnot3[["Symmans_GSE17705"]]$ER)
+sampleAnnot3[["Symmans_GSE17705"]]$ER <-gsub("ER\\+","Pos",sampleAnnot3[["Symmans_GSE17705"]]$ER)
+table(sampleAnnot3[["Symmans_GSE17705"]]$Treatment)
+sampleAnnot3[["Symmans_GSE17705"]]$Treatment <-gsub("Tamoxifen treatment for 5 years","Tam",sampleAnnot3[["Symmans_GSE17705"]]$Treatment)
+sampleAnnot3[["Symmans_GSE17705"]][1:10,]
+
 
 #=======================================
-# Wang05_GSE2034
+#          Wang05_GSE2034
 #====================================
 
 sampleAnnot3[["Wang05_GSE2034"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Wang05_GSE2034"]],nrow(sampleAnnot2[["Wang05_GSE2034"]])),
@@ -740,53 +745,54 @@ sampleAnnot3[["Wang05_GSE2034"]]<- data.frame(batch     = rep(names(sampleAnnot2
 sampleAnnot3[["Wang05_GSE2034"]][1:20,]
 table(sampleAnnot3[["Wang05_GSE2034"]]$relapse)
 
-
-#sample annot 10   "Zhang"
+#=============================
+#   Zhang_GSE12093
 #===============================
 
-sampleAnnot3[[10]]<- data.frame(batch     = rep(names(sampleAnnot2)[[10]],nrow(sampleAnnot2[[10]])),
-                                platform  = sampleAnnot2[[10]]$platform_id ,
-                                relapse   = sampleAnnot2[[10]]$characteristics_ch1.2 ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[[10]]$`DFS.time:ch1`))),digits=1) ,    # month
-                                ER        = rep(NA,nrow(sampleAnnot2[[10]])),
-                                PR        = rep(NA,nrow(sampleAnnot2[[10]])),
-                                HER2      = rep(NA,nrow(sampleAnnot2[[10]])),
-                                Treatment = rep("Tam_only",nrow(sampleAnnot2[[10]])),
-                                age      = rep(NA,nrow(sampleAnnot2[[10]])),
-                                row.names = rownames(sampleAnnot2[[10]]),
+sampleAnnot3[["Zhang_GSE12093"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Zhang_GSE12093"]],nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                platform  = sampleAnnot2[["Zhang_GSE12093"]]$platform_id ,
+                                relapse   = sampleAnnot2[["Zhang_GSE12093"]]$characteristics_ch1.2 ,
+                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Zhang_GSE12093"]]$`DFS.time:ch1`))),digits=1) ,    # month
+                                ER        = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                PR        = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                HER2      = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                Treatment = rep("Tam_only",nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                age      = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                row.names = rownames(sampleAnnot2[["Zhang_GSE12093"]]),
                                 stringsAsFactors = F)
 
-sampleAnnot3[[10]][1:10,]
-table(sampleAnnot3[[10]]$relapse)
-sampleAnnot3[[10]]$relapse <- gsub("DFS.status: ","",sampleAnnot3[[10]]$relapse)
-sampleAnnot3[[10]][1:10,]
+sampleAnnot3[["Zhang_GSE12093"]][1:10,]
+table(sampleAnnot3[["Zhang_GSE12093"]]$relapse)
+sampleAnnot3[["Zhang_GSE12093"]]$relapse <- gsub("DFS.status: ","",sampleAnnot3[["Zhang_GSE12093"]]$relapse)
+sampleAnnot3[["Zhang_GSE12093"]][1:10,]
 
-#sample annot 7  "Zhou"
+#==============================
+#    Zhou_GSE7378
 #================================
 
-sampleAnnot3[[7]]<- data.frame(batch     = rep(names(sampleAnnot2)[[7]],nrow(sampleAnnot2[[7]])),
-                               platform  = sampleAnnot2[[7]]$platform_id ,
-                               relapse   = sampleAnnot2[[7]]$characteristics_ch1.2 ,
-                               RFS      =  round((as.numeric(as.character(sampleAnnot2[[7]]$"DFS_years:")))*12,digits=1) ,    #year -> month
-                               ER        = sampleAnnot2[[7]]$characteristics_ch1 ,
-                               PR        = rep(NA,nrow(sampleAnnot2[[7]])),
-                               HER2      = rep(NA,nrow(sampleAnnot2[[7]])),
-                               Treatment = rep("chemo_ao_horm",nrow(sampleAnnot2[[7]])),
-                               age      = sampleAnnot2[[7]]$`age:ch1` ,  #to check
-                               row.names = rownames(sampleAnnot2[[7]]),
+sampleAnnot3[["Zhou_GSE7378"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Zhou_GSE7378"]],nrow(sampleAnnot2[["Zhou_GSE7378"]])),
+                               platform  = sampleAnnot2[["Zhou_GSE7378"]]$platform_id ,
+                               relapse   = sampleAnnot2[["Zhou_GSE7378"]]$characteristics_ch1.2 ,
+                               RFS      =  round((as.numeric(as.character(sampleAnnot2[["Zhou_GSE7378"]]$"DFS_years:")))*12,digits=1) ,    #year -> month
+                               ER        = sampleAnnot2[["Zhou_GSE7378"]]$characteristics_ch1 ,
+                               PR        = rep(NA,nrow(sampleAnnot2[["Zhou_GSE7378"]])),
+                               HER2      = rep(NA,nrow(sampleAnnot2[["Zhou_GSE7378"]])),
+                               Treatment = rep("chemo_ao_horm",nrow(sampleAnnot2[["Zhou_GSE7378"]])),
+                               age      = sampleAnnot2[["Zhou_GSE7378"]]$`age:ch1` ,  #to check
+                               row.names = rownames(sampleAnnot2[["Zhou_GSE7378"]]),
                                stringsAsFactors = F)
 
-sampleAnnot3[[7]][1:10,]
-table(sampleAnnot3[[7]]$relapse)
-sampleAnnot3[[7]]$relapse <-gsub("DFS_years:","",sampleAnnot3[[7]]$relapse)
-sampleAnnot3[[7]]$relapse <-as.numeric(sampleAnnot3[[7]]$relapse )
-sampleAnnot3[[7]]$relapse[which(sampleAnnot3[[7]]$relapse<=3)]<- "1"    #RFS 3year
-sampleAnnot3[[7]]$relapse[which(sampleAnnot3[[7]]$relapse>3)]<- "0"
-sampleAnnot3[[7]]$relapse[which(sampleAnnot3[[7]]$relapse>10)]<- "0"
+sampleAnnot3[["Zhou_GSE7378"]][1:10,]
+table(sampleAnnot3[["Zhou_GSE7378"]]$relapse)
+sampleAnnot3[["Zhou_GSE7378"]]$relapse <-gsub("DFS_years:","",sampleAnnot3[["Zhou_GSE7378"]]$relapse)
+sampleAnnot3[["Zhou_GSE7378"]]$relapse <-as.numeric(sampleAnnot3[["Zhou_GSE7378"]]$relapse )
+sampleAnnot3[["Zhou_GSE7378"]]$relapse[which(sampleAnnot3[["Zhou_GSE7378"]]$relapse<=3)]<- "1"    #RFS 3year
+sampleAnnot3[["Zhou_GSE7378"]]$relapse[which(sampleAnnot3[["Zhou_GSE7378"]]$relapse>3)]<- "0"
+sampleAnnot3[["Zhou_GSE7378"]]$relapse[which(sampleAnnot3[["Zhou_GSE7378"]]$relapse>10)]<- "0"
 
-table(sampleAnnot3[[7]]$ER)
-sampleAnnot3[[7]]$ER <-gsub("ER\\+","Pos",sampleAnnot3[[7]]$ER)
-sampleAnnot3[[7]][1:10,]
+table(sampleAnnot3[["Zhou_GSE7378"]]$ER)
+sampleAnnot3[["Zhou_GSE7378"]]$ER <-gsub("ER\\+","Pos",sampleAnnot3[["Zhou_GSE7378"]]$ER)
+sampleAnnot3[["Zhou_GSE7378"]][1:10,]
 
 
 
@@ -794,7 +800,7 @@ sampleAnnot3[[7]][1:10,]
 #sample annot 19        "guedj"
 #========================================
 
-Guedj_sampleAnnot<-read.csv("K:/Bioinfomique/a-basseville/DATA_reseau/DATA_SSP/24_Guedj_E-METAB-365-RAW/Guedj_sampleAnnot.csv")
+Guedj_sampleAnnot<-read.csv("Guedj_sampleAnnot.csv")
 View(Guedj_sampleAnnot)
 
 inters1<-intersect(Guedj_sampleAnnot$name,c(colnames(Guedj_1),colnames(Guedj_2)) ) 
