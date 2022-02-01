@@ -2,7 +2,7 @@
 #==============================================================================================================
 
 
-#                WP2 - STEP TWO  /// download, normalize and merge Affymetrix raw data  (exprSet preparation)
+#                WP2 - STEP ONE  /// download, normalize and merge Affymetrix raw data  (exprSet preparation)
 
 
 #=====================================================================================================================
