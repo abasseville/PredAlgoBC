@@ -1,72 +1,57 @@
 
 
-
-
-
-
-
-
-# ===========================     WORK IN  PROGRESS  ===========================================
-
-
-
-
-
-
-
-
-# ==============================================================================================================
-
-
-
-#     PredAlgoBC WP2 - STEP TWO : Sample Annotation preparation
-
-
-
-#================================================================================================================
-
 library(GEOquery)
 
 # Attention, two special cases (loi07 and Pawitan), where GPL96 (HG-U133A) and GPL97 (HG-U133B) have to be combined 
 #  =>  HG-U133A+ HG-U133B equivalent to HG-U133_Plus_2  (GPL70)
 
-setwd("rawCEL_andNorm")
-celFolders <- list.dirs(recursive=F,full.names = F)
+dir.create("C:/Users/a-basseville/Documents/ICO/1-RESULTS/DATA_SSP/WP2_onlyaffy/rawCEL_andNorm")
+setwd("C:/Users/a-basseville/Documents/ICO/1-RESULTS/DATA_SSP/WP2_onlyaffy/rawCEL_andNorm")
+
+
+celFolders <-c("Clarke_GSE42568","Desmedt07_GSE7390","Filipits_GSE26971","Hatzis_GSE25055","Kao_GSE20685",
+   "Li_GSE19615","Loi07_GSE6532","loi08_GSE9195","Minn05_GSE2603","Minn07_GSE5327","Nagalla_GSE45255",
+"Pawitan_GSE1456", "Rody_GSE31519","Schmidt_GSE11121", "Sircoulomb_GSE17907", "Symmans_GSE17705",
+"Wang05_GSE2034" ,"Zhang_GSE12093","Zhou_GSE7378")
+# celFolders <- list.dirs(recursive=F,full.names = F)
 GEOnames <- celFolders[grep("GSE", celFolders)]
 
 sampleAnnot <- list()
 for (i in GEOnames){
-sampleAnnot[[i]] <- GEOquery::getGEO(gsub(".*_","",i)  ,     # keep only what is after "_" = GSE name
-                              GSEMatrix =T, AnnotGPL=TRUE)
+  sampleAnnot[[i]] <- GEOquery::getGEO(gsub(".*_","",i)  ,     # keep only what is after "_" = GSE name
+                                       GSEMatrix =T, AnnotGPL=TRUE)
 }
- 
+
+saveRDS(sampleAnnot, "rawsampleAnnot.rds")
+
 # create a function to repaet specific element in a vector
 repElement <- function(vecAll, vecChoice, n){
   i1 <- vecAll %in% vecChoice
   vec3 <- seq_along(vecAll)
   c(vecAll[!i1], rep(vecAll[i1], each = n))[order(c(vec3[!i1], 
-                                                rep(vec3[i1], each=n)))]
+                                                    rep(vec3[i1], each=n)))]
 }                              
-                              
+
 GEOnamesBis <- repElement (GEOnames,"Pawitan_GSE1456" ,2)
 GEOnamesBis <- repElement (GEOnamesBis,"Loi07_GSE6532" ,3)
 make.names(GEOnamesBis, unique=T)  
 
 sampleAnnot2 <-list()
 for (i in GEOnamesBis){
- if ( grepl("\\.1$",i  )  {
- sampleAnnot2[[i]] <- sampleAnnot[[i]][[2]]
- } else if ( grepl("\\.2$",i)   { 
- sampleAnnot2[[i]] <- sampleAnnot[[i]][[3]] 
- } else { 
- sampleAnnot2[[i]] <- sampleAnnot[[i]][[1]] 
-}
+  
+  if ( grepl("\\.1$",i)  )  {
+    sampleAnnot2[[i]] <- sampleAnnot[[i]][[2]]
+  } else if ( grepl("\\.2$",i))   { 
+    sampleAnnot2[[i]] <- sampleAnnot[[i]][[3]] 
+  } else { 
+    sampleAnnot2[[i]] <- sampleAnnot[[i]][[1]] 
+  }
 }
 rm(sampleAnnot)
 
 # keep only sample Annot
 
-for (i in names(sampleAnnot2) {
+for (i in names(sampleAnnot2) ){
   sampleAnnot2[[i]] <-sampleAnnot2[[i]]@phenoData@data
 }
 
@@ -101,7 +86,7 @@ saveRDS(sampleAnnot2,file='sampleAnnot_allAffy.rds')
 
 for (i in names(sampleAnnot2)) {
   keep <- grep("^260$|^rna$|^status$|^submission_date$|^last_update_date$|^type$|^channel_count$|^source_name_ch$|^organism_ch$|^molecule_ch$|^extract_protocol_ch$|^label_ch$|^label_protocol_ch$|^taxid_ch$|_protocol$|^description$|^data_processing$|^contact_|^supplementary_file$|^data_row_count$",
-               colnames(sampleAnnot[[i]]), value=TRUE, invert=TRUE) 
+               colnames(sampleAnnot2[[i]]), value=TRUE, invert=TRUE) 
   sampleAnnot2[[i]] <-sampleAnnot2[[i]][,keep]
 }
 
@@ -113,23 +98,31 @@ sampleAnnot3 <- list()
 #           Clarke_GSE42568
 #========================================
 
-sampleAnnot3[["Clarke_GSE42568"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Clarke_GSE42568"]],nrow(sampleAnnot2[["Clarke_GSE42568"]])),
-                                platform  = sampleAnnot2[["Clarke_GSE42568"]]$platform_id ,
-                                relapse   = sampleAnnot2[["Clarke_GSE42568"]]$`relapse free survival event:ch1` ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Clarke_GSE42568"]]$`relapse free survival time_days:ch1`)))/30,digits=1) ,    #day -> month
-                                ER        = sampleAnnot2[["Clarke_GSE42568"]]$`er_status:ch1` ,
-                                PR        = rep(NA,nrow(sampleAnnot2[["Clarke_GSE42568"]])),
-                                HER2      = rep(NA,nrow(sampleAnnot2[["Clarke_GSE42568"]])),
-                                Treatment = rep("chemo_ao_horm",nrow(sampleAnnot2[["Clarke_GSE42568"]])),
-                                age      = sampleAnnot2[["Clarke_GSE42568"]]$`age:ch1` ,
-                                row.names = rownames(sampleAnnot2[["Clarke_GSE42568"]]),
-                                stringsAsFactors = F)
+sampleAnnot3[["Clarke_GSE42568"]]<- data.frame(batch     = rep("Clarke_GSE42568",nrow(sampleAnnot2[["Clarke_GSE42568"]])),
+                                               platform  = sampleAnnot2[["Clarke_GSE42568"]]$platform_id ,
+                                               relapse   = sampleAnnot2[["Clarke_GSE42568"]]$`relapse free survival event:ch1` ,
+                                               RFS      =  round((as.numeric(as.character(sampleAnnot2[["Clarke_GSE42568"]]$`relapse free survival time_days:ch1`)))/30,digits=1) ,    #day -> month
+                                               ER        = sampleAnnot2[["Clarke_GSE42568"]]$`er_status:ch1` ,
+                                               PR        = rep(NA,nrow(sampleAnnot2[["Clarke_GSE42568"]])),
+                                               HER2      = rep(NA,nrow(sampleAnnot2[["Clarke_GSE42568"]])),
+                                               Treatment = rep("chemo_ao_horm",nrow(sampleAnnot2[["Clarke_GSE42568"]])),
+                                               age      = sampleAnnot2[["Clarke_GSE42568"]]$`age:ch1` ,
+                                               tumorSize= as.numeric(as.character(sampleAnnot2[["Clarke_GSE42568"]]$`size:ch1`)),
+                                               LN= sampleAnnot2[["Clarke_GSE42568"]]$`lymph node status:ch1`,
+                                               grade= sampleAnnot2[["Clarke_GSE42568"]]$`grade:ch1`,
+                                               biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Clarke_GSE42568"]])),
+                                               row.names = rownames(sampleAnnot2[["Clarke_GSE42568"]]),
+                                               stringsAsFactors = F)
 
 sampleAnnot3[["Clarke_GSE42568"]][1:10,]
 table(sampleAnnot3[["Clarke_GSE42568"]]$relapse)
 sampleAnnot3[["Clarke_GSE42568"]]$relapse <-gsub("NA", NA,sampleAnnot3[["Clarke_GSE42568"]]$relapse)
 
 table(sampleAnnot3[["Clarke_GSE42568"]]$ER)
+table(sampleAnnot3[["Clarke_GSE42568"]]$LN)
+sampleAnnot3[["Clarke_GSE42568"]]$LN <-gsub("1", "yes",sampleAnnot3[["Clarke_GSE42568"]]$LN)
+plot(sampleAnnot3[["Clarke_GSE42568"]]$tumorSize)
+table(sampleAnnot3[["Clarke_GSE42568"]]$grade)
 sampleAnnot3[["Clarke_GSE42568"]]$ER <-gsub("NA", NA,sampleAnnot3[["Clarke_GSE42568"]]$ER)
 sampleAnnot3[["Clarke_GSE42568"]]$PR <-gsub("NA", NA,sampleAnnot3[["Clarke_GSE42568"]]$PR)
 sampleAnnot3[["Clarke_GSE42568"]]$HER2 <-gsub("NA", NA,sampleAnnot3[["Clarke_GSE42568"]]$HER2 )
@@ -140,42 +133,57 @@ sampleAnnot3[["Clarke_GSE42568"]][100:110,]
 #=====================================
 
 
-sampleAnnot3[["Desmedt07_GSE7390"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Desmedt07_GSE7390"]],nrow(sampleAnnot2[["Desmedt07_GSE7390"]])),
-                               platform  = sampleAnnot2[["Desmedt07_GSE7390"]]$platform_id ,
-                               relapse   = sampleAnnot2[["Desmedt07_GSE7390"]]$`e.rfs:ch1` ,
-                               RFS       = round((as.numeric(as.character(sampleAnnot2[["Desmedt07_GSE7390"]]$`t.rfs:ch1`)))/30,digits=1),    #jour -> mois
-                               ER        = sampleAnnot2[["Desmedt07_GSE7390"]]$`er:ch1` ,
-                               PR        = rep(NA,nrow(sampleAnnot2[["Desmedt07_GSE7390"]])),
-                               HER2      = rep(NA,nrow(sampleAnnot2[["Desmedt07_GSE7390"]])),
-                               Treatment = rep("surg_only",nrow(sampleAnnot2[["Desmedt07_GSE7390"]])),
-                               age      = sampleAnnot2[["Desmedt07_GSE7390"]]$`age:ch1`,   #to check
-                               row.names = rownames(sampleAnnot2[["Desmedt07_GSE7390"]]),
-                               stringsAsFactors = F)
+sampleAnnot3[["Desmedt07_GSE7390"]]<- data.frame(batch     = rep("Desmedt07_GSE7390",nrow(sampleAnnot2[["Desmedt07_GSE7390"]])),
+                                                 platform  = sampleAnnot2[["Desmedt07_GSE7390"]]$platform_id ,
+                                                 relapse   = sampleAnnot2[["Desmedt07_GSE7390"]]$`e.rfs:ch1` ,
+                                                 RFS       = round((as.numeric(as.character(sampleAnnot2[["Desmedt07_GSE7390"]]$`t.rfs:ch1`)))/30,digits=1),    #jour -> mois
+                                                 ER        = sampleAnnot2[["Desmedt07_GSE7390"]]$`er:ch1` ,
+                                                 PR        = rep(NA,nrow(sampleAnnot2[["Desmedt07_GSE7390"]])),
+                                                 HER2      = rep(NA,nrow(sampleAnnot2[["Desmedt07_GSE7390"]])),
+                                                 Treatment = rep("surg_only",nrow(sampleAnnot2[["Desmedt07_GSE7390"]])),
+                                                 age      = sampleAnnot2[["Desmedt07_GSE7390"]]$`age:ch1`,   #to check
+                                                 tumorSize= sampleAnnot2[["Desmedt07_GSE7390"]]$`size:ch1`,
+                                                 LN= sampleAnnot2[["Desmedt07_GSE7390"]]$`node:ch1`,
+                                                 grade= sampleAnnot2[["Desmedt07_GSE7390"]]$`grade:ch1`,
+                                                 biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Desmedt07_GSE7390"]])),
+                                                 row.names = rownames(sampleAnnot2[["Desmedt07_GSE7390"]]),
+                                                 stringsAsFactors = F)
 
 sampleAnnot3[["Desmedt07_GSE7390"]][1:10,]
+table(sampleAnnot3[["Desmedt07_GSE7390"]]$LN)
+plot(sampleAnnot3[["Desmedt07_GSE7390"]]$tumorSize)
+table(sampleAnnot3[["Desmedt07_GSE7390"]]$grade)
 table(sampleAnnot3[["Desmedt07_GSE7390"]]$relapse)
 table(sampleAnnot3[["Desmedt07_GSE7390"]]$ER)
 sampleAnnot3[["Desmedt07_GSE7390"]]$ER <-gsub("0","Neg",sampleAnnot3[["Desmedt07_GSE7390"]]$ER)
 sampleAnnot3[["Desmedt07_GSE7390"]]$ER <-gsub("1","Pos",sampleAnnot3[["Desmedt07_GSE7390"]]$ER)
 sampleAnnot3[["Desmedt07_GSE7390"]][1:10,]
 
+
 #======================================
 #          Filipits_GSE26971
 #=========================================
 
-sampleAnnot3[["Filipits_GSE26971"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Filipits_GSE26971"]],nrow(sampleAnnot2[["Filipits_GSE26971"]])),
-                                platform  = sampleAnnot2[["Filipits_GSE26971"]]$platform_id ,
-                                relapse   = sampleAnnot2[["Filipits_GSE26971"]]$`metastasis (1:ch1` ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Filipits_GSE26971"]]$`metastasis free interval (months):ch1`))),digits=1) ,    #month
-                                ER        = rep(NA,nrow(sampleAnnot2[["Filipits_GSE26971"]])),
-                                PR        = rep(NA,nrow(sampleAnnot2[["Filipits_GSE26971"]])),
-                                HER2      = rep(NA,nrow(sampleAnnot2[["Filipits_GSE26971"]])),
-                                Treatment = sampleAnnot2[["Filipits_GSE26971"]]$`adjuvant patient treatment:ch1`,
-                                age      = rep(NA,nrow(sampleAnnot2[["Filipits_GSE26971"]])),
-                                row.names = rownames(sampleAnnot2[["Filipits_GSE26971"]]),
-                                stringsAsFactors = F)
+sampleAnnot3[["Filipits_GSE26971"]]<- data.frame(batch     = rep("Filipits_GSE26971",nrow(sampleAnnot2[["Filipits_GSE26971"]])),
+                                                 platform  = sampleAnnot2[["Filipits_GSE26971"]]$platform_id ,
+                                                 relapse   = sampleAnnot2[["Filipits_GSE26971"]]$`metastasis (1:ch1` ,
+                                                 RFS      =  round((as.numeric(as.character(sampleAnnot2[["Filipits_GSE26971"]]$`metastasis free interval (months):ch1`))),digits=1) ,    #month
+                                                 ER        = rep(NA,nrow(sampleAnnot2[["Filipits_GSE26971"]])),
+                                                 PR        = rep(NA,nrow(sampleAnnot2[["Filipits_GSE26971"]])),
+                                                 HER2      = rep(NA,nrow(sampleAnnot2[["Filipits_GSE26971"]])),
+                                                 Treatment = sampleAnnot2[["Filipits_GSE26971"]]$`adjuvant patient treatment:ch1`,
+                                                 age      = rep(NA,nrow(sampleAnnot2[["Filipits_GSE26971"]])),
+                                                 tumorSize= sampleAnnot2[["Filipits_GSE26971"]]$`tumor size:ch1`,
+                                                 LN= sampleAnnot2[["Filipits_GSE26971"]]$`positive lymph nodes:ch1`,
+                                                 grade= rep(NA,nrow(sampleAnnot2[["Filipits_GSE26971"]])),
+                                                 biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Filipits_GSE26971"]])),
+                                                 row.names = rownames(sampleAnnot2[["Filipits_GSE26971"]]),
+                                                 stringsAsFactors = F)
 
 sampleAnnot3[["Filipits_GSE26971"]][1:10,]
+table(sampleAnnot3[["Filipits_GSE26971"]]$LN)
+plot(sampleAnnot3[["Filipits_GSE26971"]]$tumorSize)
+table(sampleAnnot3[["Filipits_GSE26971"]]$grade)
 table(sampleAnnot3[["Filipits_GSE26971"]]$relapse)
 sampleAnnot3[["Filipits_GSE26971"]]$relapse <-gsub("yes, 0: no/censored): ","",sampleAnnot3[["Filipits_GSE26971"]]$relapse)
 sampleAnnot3[["Filipits_GSE26971"]]$Treatment <-gsub("Tamoxifen","Tam",sampleAnnot3[["Filipits_GSE26971"]]$Treatment)
@@ -185,22 +193,29 @@ sampleAnnot3[["Filipits_GSE26971"]][1:10,]
 #     Hatzis_GSE25055
 #=================================
 
-sampleAnnot3[["Hatzis_GSE25055"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Hatzis_GSE25055"]],nrow(sampleAnnot2[["Hatzis_GSE25055"]])),
-                                platform  = sampleAnnot2[["Hatzis_GSE25055"]]$platform_id ,
-                                relapse   = sampleAnnot2[["Hatzis_GSE25055"]]$`drfs_1_event_0_censored:ch1` ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Hatzis_GSE25055"]]$`drfs_even_time_years:ch1`)))*12,digits=1) ,    #year -> month
-                                ER        = sampleAnnot2[["Hatzis_GSE25055"]]$`er_status_ihc:ch1` ,
-                                PR        = sampleAnnot2[["Hatzis_GSE25055"]]$`pr_status_ihc:ch1` ,
-                                HER2      = sampleAnnot2[["Hatzis_GSE25055"]]$`her2_status:ch1` ,
-                                Treatment = rep(NA,nrow(sampleAnnot2[["Hatzis_GSE25055"]])),
-                                age      = sampleAnnot2[["Hatzis_GSE25055"]]$`age_years:ch1` ,
-                                row.names = rownames(sampleAnnot2[["Hatzis_GSE25055"]]),
-                                stringsAsFactors = F)
+sampleAnnot3[["Hatzis_GSE25055"]]<- data.frame(batch     = rep("Hatzis_GSE25055",nrow(sampleAnnot2[["Hatzis_GSE25055"]])),
+                                               platform  = sampleAnnot2[["Hatzis_GSE25055"]]$platform_id ,
+                                               relapse   = sampleAnnot2[["Hatzis_GSE25055"]]$`drfs_1_event_0_censored:ch1` ,
+                                               RFS      =  round((as.numeric(as.character(sampleAnnot2[["Hatzis_GSE25055"]]$`drfs_even_time_years:ch1`)))*12,digits=1) ,    #year -> month
+                                               ER        = sampleAnnot2[["Hatzis_GSE25055"]]$`er_status_ihc:ch1` ,
+                                               PR        = sampleAnnot2[["Hatzis_GSE25055"]]$`pr_status_ihc:ch1` ,
+                                               HER2      = sampleAnnot2[["Hatzis_GSE25055"]]$`her2_status:ch1` ,
+                                               Treatment = rep(NA,nrow(sampleAnnot2[["Hatzis_GSE25055"]])),
+                                               age      = sampleAnnot2[["Hatzis_GSE25055"]]$`age_years:ch1` ,
+                                               tumorSize= sampleAnnot2[["Hatzis_GSE25055"]]$`clinical_t_stage:ch1`,
+                                               LN= sampleAnnot2[["Hatzis_GSE25055"]]$`clinical_nodal_status:ch1`,
+                                               grade= sampleAnnot2[["Hatzis_GSE25055"]]$`grade:ch1`,
+                                               biopsy= rep("FNA/CBX ",nrow(sampleAnnot2[["Hatzis_GSE25055"]])),
+                                               row.names = rownames(sampleAnnot2[["Hatzis_GSE25055"]]),
+                                               stringsAsFactors = F)
 
 sampleAnnot3[["Hatzis_GSE25055"]][1:10,]
 table(sampleAnnot3[["Hatzis_GSE25055"]]$relapse)
 
 table(sampleAnnot3[["Hatzis_GSE25055"]]$ER)
+table(sampleAnnot3[["Hatzis_GSE25055"]]$LN)
+table(sampleAnnot3[["Hatzis_GSE25055"]]$tumorSize)
+table(sampleAnnot3[["Hatzis_GSE25055"]]$grade)
 sampleAnnot3[["Hatzis_GSE25055"]]$ER <-gsub("^N$","Neg",sampleAnnot3[["Hatzis_GSE25055"]]$ER)
 sampleAnnot3[["Hatzis_GSE25055"]]$ER <-gsub("P|I","Pos",sampleAnnot3[["Hatzis_GSE25055"]]$ER)
 sampleAnnot3[["Hatzis_GSE25055"]]$ER <-gsub("NA",NA,sampleAnnot3[["Hatzis_GSE25055"]]$ER)
@@ -224,19 +239,28 @@ sampleAnnot3[["Hatzis_GSE25055"]][1:10,]
 #====================================
 
 
-sampleAnnot3[["Kao_GSE20685"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Kao_GSE20685"]],nrow(sampleAnnot2[["Kao_GSE20685"]])),
-                                platform  = sampleAnnot2[["Kao_GSE20685"]]$platform_id ,
-                                relapse   = sampleAnnot2[["Kao_GSE20685"]]$`event_metastasis:ch1` ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Kao_GSE20685"]]$`time_to_metastasis (years):ch1`)))*12,digits=1) ,    #year -> month
-                                ER        = rep(NA,nrow(sampleAnnot2[["Kao_GSE20685"]])),
-                                PR        = rep(NA,nrow(sampleAnnot2[["Kao_GSE20685"]])),
-                                HER2      = rep(NA,nrow(sampleAnnot2[["Kao_GSE20685"]])),
-                                Treatment = sampleAnnot2[["Kao_GSE20685"]]$`adjuvant_chemotherapy:ch1`,
-                                age      = sampleAnnot2[["Kao_GSE20685"]]$"age at diagnosis:ch1" ,
-                                row.names = rownames(sampleAnnot2[["Kao_GSE20685"]]),
-                                stringsAsFactors = F)
+sampleAnnot3[["Kao_GSE20685"]]<- data.frame(batch     = rep("Kao_GSE20685",nrow(sampleAnnot2[["Kao_GSE20685"]])),
+                                            platform  = sampleAnnot2[["Kao_GSE20685"]]$platform_id ,
+                                            relapse   = sampleAnnot2[["Kao_GSE20685"]]$`event_metastasis:ch1` ,
+                                            RFS      =  round((as.numeric(as.character(sampleAnnot2[["Kao_GSE20685"]]$`time_to_metastasis (years):ch1`)))*12,digits=1) ,    #year -> month
+                                            ER        = rep(NA,nrow(sampleAnnot2[["Kao_GSE20685"]])),
+                                            PR        = rep(NA,nrow(sampleAnnot2[["Kao_GSE20685"]])),
+                                            HER2      = rep(NA,nrow(sampleAnnot2[["Kao_GSE20685"]])),
+                                            Treatment = sampleAnnot2[["Kao_GSE20685"]]$`adjuvant_chemotherapy:ch1`,
+                                            age      = sampleAnnot2[["Kao_GSE20685"]]$"age at diagnosis:ch1" ,
+                                            tumorSize= sampleAnnot2[["Kao_GSE20685"]]$`t_stage:ch1`,
+                                            LN= sampleAnnot2[["Kao_GSE20685"]]$`n_stage:ch1`,
+                                            grade= rep(NA,nrow(sampleAnnot2[["Kao_GSE20685"]])),
+                                            biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Kao_GSE20685"]])),
+                                            row.names = rownames(sampleAnnot2[["Kao_GSE20685"]]),
+                                            stringsAsFactors = F)
 
 sampleAnnot3[["Kao_GSE20685"]][1:10,]
+table(sampleAnnot3[["Kao_GSE20685"]]$LN)
+sampleAnnot3[["Kao_GSE20685"]]$LN <- paste0("N",sampleAnnot3[["Kao_GSE20685"]]$LN)
+table(sampleAnnot3[["Kao_GSE20685"]]$tumorSize)
+sampleAnnot3[["Kao_GSE20685"]]$tumorSize <- paste0("T",sampleAnnot3[["Kao_GSE20685"]]$tumorSize)
+
 table(sampleAnnot3[["Kao_GSE20685"]]$relapse)
 table(sampleAnnot3[["Kao_GSE20685"]]$Treatment)
 sampleAnnot3[["Kao_GSE20685"]]$Treatment <-gsub("yes","chemo_ao_horm" ,sampleAnnot3[["Kao_GSE20685"]]$Treatment)
@@ -248,20 +272,27 @@ sampleAnnot3[["Kao_GSE20685"]][1:10,]
 #  Li_GSE19615
 #============================
 
-sampleAnnot3[["Li_GSE19615"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Li_GSE19615"]],nrow(sampleAnnot2[["Li_GSE19615"]])),
-                                platform  = sampleAnnot2[["Li_GSE19615"]]$platform_id ,
-                                relapse   = sampleAnnot2[["Li_GSE19615"]]$`tumor recurrence (36mo):ch1` ,    #3ans
-                                RFS       = rep(NA,nrow(sampleAnnot2[["Li_GSE19615"]])),
-                                ER        = sampleAnnot2[["Li_GSE19615"]]$`er:ch1` ,
-                                PR        = sampleAnnot2[["Li_GSE19615"]]$`pr:ch1` ,
-                                HER2      = sampleAnnot2[["Li_GSE19615"]]$`her.2:ch1` ,
-                                Treatment = sampleAnnot2[["Li_GSE19615"]]$"adjuvant chemotherapy:ch1",
-                                Treatment2 = sampleAnnot2[["Li_GSE19615"]]$"hormonal rx:ch1",
-                                age      =  sampleAnnot2[["Li_GSE19615"]]$`age:ch1` ,
-                                row.names = rownames(sampleAnnot2[["Li_GSE19615"]]),
-                                stringsAsFactors = F)
+sampleAnnot3[["Li_GSE19615"]]<- data.frame(batch     = rep("Li_GSE19615",nrow(sampleAnnot2[["Li_GSE19615"]])),
+                                           platform  = sampleAnnot2[["Li_GSE19615"]]$platform_id ,
+                                           relapse   = sampleAnnot2[["Li_GSE19615"]]$`tumor recurrence (36mo):ch1` ,    #3years
+                                           RFS       = rep(NA,nrow(sampleAnnot2[["Li_GSE19615"]])),
+                                           ER        = sampleAnnot2[["Li_GSE19615"]]$`er:ch1` ,
+                                           PR        = sampleAnnot2[["Li_GSE19615"]]$`pr:ch1` ,
+                                           HER2      = sampleAnnot2[["Li_GSE19615"]]$`her.2:ch1` ,
+                                           Treatment = sampleAnnot2[["Li_GSE19615"]]$"adjuvant chemotherapy:ch1",
+                                           Treatment2 = sampleAnnot2[["Li_GSE19615"]]$"hormonal rx:ch1",
+                                           age      =  sampleAnnot2[["Li_GSE19615"]]$`age:ch1` ,
+                                           tumorSize= sampleAnnot2[["Li_GSE19615"]]$`tumor size (cm):ch1`,
+                                           LN= sampleAnnot2[["Li_GSE19615"]]$`lymph nodes:ch1`,
+                                           grade= sampleAnnot2[["Li_GSE19615"]]$`grade (modified, bloom, richardson):ch1`,
+                                           biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Li_GSE19615"]])),
+                                           row.names = rownames(sampleAnnot2[["Li_GSE19615"]]),
+                                           stringsAsFactors = F)
 
 sampleAnnot3[["Li_GSE19615"]][1:10,]
+table(sampleAnnot3[["Li_GSE19615"]]$LN)
+table(sampleAnnot3[["Li_GSE19615"]]$tumorSize)
+table(sampleAnnot3[["Li_GSE19615"]]$grade)
 table(sampleAnnot3[["Li_GSE19615"]]$relapse)
 sampleAnnot3[["Li_GSE19615"]]$relapse <- gsub("yes","1",sampleAnnot3[["Li_GSE19615"]]$relapse)
 sampleAnnot3[["Li_GSE19615"]]$relapse <- gsub("no","0",sampleAnnot3[["Li_GSE19615"]]$relapse)
@@ -313,7 +344,7 @@ sampleAnnot3[["Li_GSE19615"]][1:10,]
 
 # attention ,we have to combine 3 in one
 
-sampleAnnot[[5]]
+sampleAnnot2[["Loi07"]]
 
 sampleAnnot3[[5]]<- data.frame(geo_ID     = sampleAnnot2[[5]]$geo_accession,
                                batch     = rep( gsub("_1","",names(sampleAnnot2)[[5]]),nrow(sampleAnnot2[[5]])),
@@ -325,6 +356,10 @@ sampleAnnot3[[5]]<- data.frame(geo_ID     = sampleAnnot2[[5]]$geo_accession,
                                HER2      = rep(NA,nrow(sampleAnnot2[[5]])),
                                Treatment = rep("Tam_only",nrow(sampleAnnot2[[5]])),
                                age      = sampleAnnot2[[5]]$`age:ch1`,   #to check
+                               tumorSize= rep(NA,nrow(sampleAnnot2[["Clarke_GSE42568"]])),
+                               LN= rep(NA,nrow(sampleAnnot2[["Clarke_GSE42568"]])),
+                               grade= rep(NA,nrow(sampleAnnot2[["Clarke_GSE42568"]])),
+                               biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Clarke_GSE42568"]])),
                                row.names =  sampleAnnot2[[5]]$title,
                                stringsAsFactors = F)
 
@@ -416,16 +451,20 @@ sampleAnnot3[[5]][1:10,]
 #====================================
 
 sampleAnnot3[["loi08_GSE9195"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["loi08_GSE9195"]],nrow(sampleAnnot2[["loi08_GSE9195"]])),
-                               platform  = sampleAnnot2[["loi08_GSE9195"]]$platform_id ,
-                               relapse   = sampleAnnot2[["loi08_GSE9195"]]$`e.rfs:ch1` ,
-                               RFS      =  round((as.numeric(as.character(sampleAnnot2[["loi08_GSE9195"]]$"t.rfs:ch1")))/30,digits=1) ,    # day -> month
-                               ER        = sampleAnnot2[["loi08_GSE9195"]]$`er:ch1` ,
-                               PR        = sampleAnnot2[["loi08_GSE9195"]]$`pgr:ch1` ,
-                               HER2      = rep(NA,nrow(sampleAnnot2[["loi08_GSE9195"]])),
-                               Treatment = rep("Tam_only",nrow(sampleAnnot2[["loi08_GSE9195"]])),
-                               age      = sampleAnnot2[["loi08_GSE9195"]]$`age:ch1` ,
-                               row.names = rownames(sampleAnnot2[["loi08_GSE9195"]]),
-                               stringsAsFactors = F)
+                                             platform  = sampleAnnot2[["loi08_GSE9195"]]$platform_id ,
+                                             relapse   = sampleAnnot2[["loi08_GSE9195"]]$`e.rfs:ch1` ,
+                                             RFS      =  round((as.numeric(as.character(sampleAnnot2[["loi08_GSE9195"]]$"t.rfs:ch1")))/30,digits=1) ,    # day -> month
+                                             ER        = sampleAnnot2[["loi08_GSE9195"]]$`er:ch1` ,
+                                             PR        = sampleAnnot2[["loi08_GSE9195"]]$`pgr:ch1` ,
+                                             HER2      = rep(NA,nrow(sampleAnnot2[["loi08_GSE9195"]])),
+                                             Treatment = rep("Tam_only",nrow(sampleAnnot2[["loi08_GSE9195"]])),
+                                             age      = sampleAnnot2[["loi08_GSE9195"]]$`age:ch1` ,
+                                             tumorSize= rep(NA,nrow(sampleAnnot2[["loi08_GSE9195"]])),
+                                             LN= rep(NA,nrow(sampleAnnot2[["loi08_GSE9195"]])),
+                                             grade= rep(NA,nrow(sampleAnnot2[["loi08_GSE9195"]])),
+                                             biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["loi08_GSE9195"]])),
+                                             row.names = rownames(sampleAnnot2[["loi08_GSE9195"]]),
+                                             stringsAsFactors = F)
 
 sampleAnnot3[["loi08_GSE9195"]][1:10,]
 table(sampleAnnot3[["loi08_GSE9195"]]$relapse)
@@ -442,16 +481,20 @@ sampleAnnot3[["loi08_GSE9195"]][1:10,]
 #==============================
 
 sampleAnnot3[["Minn05_GSE2603"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Minn05_GSE2603"]],nrow(sampleAnnot2[["Minn05_GSE2603"]])),
-                               platform  = sampleAnnot2[["Minn05_GSE2603"]]$platform_id,
-                               relapse   = sampleAnnot2[["Minn05_GSE2603"]]$`met event:ch1`,
-                               RFS       = round((as.numeric(as.character(sampleAnnot2[["Minn05_GSE2603"]]$`mfs (yr):ch1`)))*12,digits=1), # year  -> month#year
-                               ER        = sampleAnnot2[["Minn05_GSE2603"]]$`path er status:ch1`,
-                               PR        = sampleAnnot2[["Minn05_GSE2603"]]$`path pr status:ch1`,
-                               HER2      = sampleAnnot2[["Minn05_GSE2603"]]$`her2 status:ch1`,
-                               Treatment = rep("chemo_ao_horm",nrow(sampleAnnot2[["Minn05_GSE2603"]])),
-                               age      = sampleAnnot2[["Minn05_GSE2603"]]$`age at dx:ch1` ,
-                               row.names = rownames(sampleAnnot2[["Minn05_GSE2603"]]),
-                               stringsAsFactors = F)
+                                              platform  = sampleAnnot2[["Minn05_GSE2603"]]$platform_id,
+                                              relapse   = sampleAnnot2[["Minn05_GSE2603"]]$`met event:ch1`,
+                                              RFS       = round((as.numeric(as.character(sampleAnnot2[["Minn05_GSE2603"]]$`mfs (yr):ch1`)))*12,digits=1), # year  -> month#year
+                                              ER        = sampleAnnot2[["Minn05_GSE2603"]]$`path er status:ch1`,
+                                              PR        = sampleAnnot2[["Minn05_GSE2603"]]$`path pr status:ch1`,
+                                              HER2      = sampleAnnot2[["Minn05_GSE2603"]]$`her2 status:ch1`,
+                                              Treatment = rep("chemo_ao_horm",nrow(sampleAnnot2[["Minn05_GSE2603"]])),
+                                              age      = sampleAnnot2[["Minn05_GSE2603"]]$`age at dx:ch1` ,
+                                              tumorSize= rep(NA,nrow(sampleAnnot2[["Minn05_GSE2603"]])),
+                                              LN= rep(NA,nrow(sampleAnnot2[["Minn05_GSE2603"]])),
+                                              grade= rep(NA,nrow(sampleAnnot2[["Minn05_GSE2603"]])),
+                                              biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Minn05_GSE2603"]])),
+                                              row.names = rownames(sampleAnnot2[["Minn05_GSE2603"]]),
+                                              stringsAsFactors = F)
 
 sampleAnnot3[["Minn05_GSE2603"]][1:10,1:ncol(sampleAnnot3[["Minn05_GSE2603"]])]
 table(sampleAnnot3[["Minn05_GSE2603"]]$relapse)
@@ -483,16 +526,20 @@ sampleAnnot3[["Minn05_GSE2603"]][50:60,]
 sampleAnnot2[["Minn07_GSE5327"]]$title
 
 sampleAnnot3[["Minn07_GSE5327"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Minn07_GSE5327"]],nrow(sampleAnnot2[["Minn07_GSE5327"]])),
-                               platform  = sampleAnnot2[["Minn07_GSE5327"]]$platform_id ,
-                               relapse   = sampleAnnot2[["Minn07_GSE5327"]]$`metastasis:ch1` ,
-                               RFS       = round((as.numeric(as.character(sampleAnnot2[["Minn07_GSE5327"]]$`metastasis free survival (yr):ch1`)))*12,digits=1) ,    #year -> month
-                               ER        = rep("Neg",nrow(sampleAnnot2[["Minn07_GSE5327"]])),
-                               PR        = rep(NA,nrow(sampleAnnot2[["Minn07_GSE5327"]])),
-                               HER2      = rep(NA,nrow(sampleAnnot2[["Minn07_GSE5327"]])),
-                               Treatment = rep("chemo_ao_horm",nrow(sampleAnnot2[["Minn07_GSE5327"]])),
-                               age      = rep(NA,nrow(sampleAnnot2[["Minn07_GSE5327"]])) ,
-                               row.names = rownames(sampleAnnot2[["Minn07_GSE5327"]]),
-                               stringsAsFactors = F)
+                                              platform  = sampleAnnot2[["Minn07_GSE5327"]]$platform_id ,
+                                              relapse   = sampleAnnot2[["Minn07_GSE5327"]]$`metastasis:ch1` ,
+                                              RFS       = round((as.numeric(as.character(sampleAnnot2[["Minn07_GSE5327"]]$`metastasis free survival (yr):ch1`)))*12,digits=1) ,    #year -> month
+                                              ER        = rep("Neg",nrow(sampleAnnot2[["Minn07_GSE5327"]])),
+                                              PR        = rep(NA,nrow(sampleAnnot2[["Minn07_GSE5327"]])),
+                                              HER2      = rep(NA,nrow(sampleAnnot2[["Minn07_GSE5327"]])),
+                                              Treatment = rep("chemo_ao_horm",nrow(sampleAnnot2[["Minn07_GSE5327"]])),
+                                              age      = rep(NA,nrow(sampleAnnot2[["Minn07_GSE5327"]])) ,
+                                              tumorSize= rep(NA,nrow(sampleAnnot2[["Minn07_GSE5327"]])),
+                                              LN= rep(NA,nrow(sampleAnnot2[["Minn07_GSE5327"]])),
+                                              grade= rep(NA,nrow(sampleAnnot2[["Minn07_GSE5327"]])),
+                                              biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Minn07_GSE5327"]])),
+                                              row.names = rownames(sampleAnnot2[["Minn07_GSE5327"]]),
+                                              stringsAsFactors = F)
 
 
 sampleAnnot3[["Minn07_GSE5327"]][1:10,]
@@ -504,16 +551,20 @@ table(sampleAnnot3[["Minn07_GSE5327"]]$relapse)
 #=====================================
 
 sampleAnnot3[["Nagalla_GSE45255"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Nagalla_GSE45255"]],nrow(sampleAnnot2[["Nagalla_GSE45255"]])),
-                                platform  = sampleAnnot2[["Nagalla_GSE45255"]]$platform_id ,
-                                relapse   = sampleAnnot2[["Nagalla_GSE45255"]]$`dmfs event (defined as distant metastasis or death from breast cancer):ch1` ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Nagalla_GSE45255"]]$`dmfs time:ch1`)))*12,digits=1) ,    #year -> month
-                                ER        = sampleAnnot2[["Nagalla_GSE45255"]]$`er status:ch1` ,
-                                PR        = sampleAnnot2[["Nagalla_GSE45255"]]$`pgr status:ch1` ,
-                                HER2      = sampleAnnot2[["Nagalla_GSE45255"]]$`her2 status:ch1` ,
-                                Treatment = sampleAnnot2[["Nagalla_GSE45255"]]$`treatment type:ch1` ,
-                                age      = sampleAnnot2[["Nagalla_GSE45255"]]$`patient age:ch1` ,
-                                row.names = rownames(sampleAnnot2[["Nagalla_GSE45255"]]),
-                                stringsAsFactors = F)
+                                                platform  = sampleAnnot2[["Nagalla_GSE45255"]]$platform_id ,
+                                                relapse   = sampleAnnot2[["Nagalla_GSE45255"]]$`dmfs event (defined as distant metastasis or death from breast cancer):ch1` ,
+                                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Nagalla_GSE45255"]]$`dmfs time:ch1`)))*12,digits=1) ,    #year -> month
+                                                ER        = sampleAnnot2[["Nagalla_GSE45255"]]$`er status:ch1` ,
+                                                PR        = sampleAnnot2[["Nagalla_GSE45255"]]$`pgr status:ch1` ,
+                                                HER2      = sampleAnnot2[["Nagalla_GSE45255"]]$`her2 status:ch1` ,
+                                                Treatment = sampleAnnot2[["Nagalla_GSE45255"]]$`treatment type:ch1` ,
+                                                age      = sampleAnnot2[["Nagalla_GSE45255"]]$`patient age:ch1` ,
+                                                tumorSize= rep(NA,nrow(sampleAnnot2[["Nagalla_GSE45255"]])),
+                                                LN= rep(NA,nrow(sampleAnnot2[["Nagalla_GSE45255"]])),
+                                                grade= rep(NA,nrow(sampleAnnot2[["Nagalla_GSE45255"]])),
+                                                biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Nagalla_GSE45255"]])),
+                                                row.names = rownames(sampleAnnot2[["Nagalla_GSE45255"]]),
+                                                stringsAsFactors = F)
 
 sampleAnnot3[["Nagalla_GSE45255"]][1:10,]
 table(sampleAnnot3[["Nagalla_GSE45255"]]$relapse)
@@ -554,17 +605,21 @@ sampleAnnot3[["Nagalla_GSE45255"]][1:10,]
 # special because GSM will not be used: it will be title to merge expreset
 
 sampleAnnot3[["Pawitan_GSE1456"]]<- data.frame(geo_ID     = sampleAnnot2[["Pawitan_GSE1456"]]$geo_accession,
-                               batch     = rep( gsub("_1","",names(sampleAnnot2)[["Pawitan_GSE1456"]]),nrow(sampleAnnot2[["Pawitan_GSE1456"]])),
-                               platform  = sampleAnnot2[["Pawitan_GSE1456"]]$platform_id ,
-                               relapse   = sampleAnnot2[["Pawitan_GSE1456"]]$characteristics_ch1.1 ,
-                               RFS       = round((as.numeric(as.character(sampleAnnot2[["Pawitan_GSE1456"]]$`SURV_RELAPSE:ch1`)))*12,digits=1), # year  -> month   
-                               ER        = sampleAnnot2[["Pawitan_GSE1456"]]$characteristics_ch1.6 ,   #not better than subtype
-                               PR        = rep(NA,nrow(sampleAnnot2[["Pawitan_GSE1456"]])) ,
-                               HER2      = rep(NA,nrow(sampleAnnot2[["Pawitan_GSE1456"]])) ,
-                               Treatment = rep("chemo_ao_horm_o_surg_only",nrow(sampleAnnot2[["Pawitan_GSE1456"]])),
-                               age      = rep(NA,nrow(sampleAnnot2[["Pawitan_GSE1456"]])) ,
-                               row.names = sampleAnnot2[["Pawitan_GSE1456"]]$title,
-                               stringsAsFactors = F)
+                                               batch     = rep( gsub("_1","",names(sampleAnnot2)[["Pawitan_GSE1456"]]),nrow(sampleAnnot2[["Pawitan_GSE1456"]])),
+                                               platform  = sampleAnnot2[["Pawitan_GSE1456"]]$platform_id ,
+                                               relapse   = sampleAnnot2[["Pawitan_GSE1456"]]$characteristics_ch1.1 ,
+                                               RFS       = round((as.numeric(as.character(sampleAnnot2[["Pawitan_GSE1456"]]$`SURV_RELAPSE:ch1`)))*12,digits=1), # year  -> month   
+                                               ER        = sampleAnnot2[["Pawitan_GSE1456"]]$characteristics_ch1.6 ,   #not better than subtype
+                                               PR        = rep(NA,nrow(sampleAnnot2[["Pawitan_GSE1456"]])) ,
+                                               HER2      = rep(NA,nrow(sampleAnnot2[["Pawitan_GSE1456"]])) ,
+                                               Treatment = rep("chemo_ao_horm_o_surg_only",nrow(sampleAnnot2[["Pawitan_GSE1456"]])),
+                                               age      = rep(NA,nrow(sampleAnnot2[["Pawitan_GSE1456"]])) ,
+                                               tumorSize= rep(NA,nrow(sampleAnnot2[["Pawitan_GSE1456"]])),
+                                               LN= rep(NA,nrow(sampleAnnot2[["Pawitan_GSE1456"]])),
+                                               grade= rep(NA,nrow(sampleAnnot2[["Pawitan_GSE1456"]])),
+                                               biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Pawitan_GSE1456"]])),
+                                               row.names = sampleAnnot2[["Pawitan_GSE1456"]]$title,
+                                               stringsAsFactors = F)
 
 
 sampleAnnot3[["Pawitan_GSE1456"]][1:10,]
@@ -598,7 +653,7 @@ Pawitan <- Pawitan[ ,order(names(Pawitan))]
 
 sampleAnnot3[["Pawitan_GSE1456"]]$comID <- gsub(" \\(HG-U133A\\)| \\(HG-U133B\\)","",rownames(sampleAnnot3[["Pawitan_GSE1456"]]))
 sampleAnnot3[["Pawitan_GSE1456"]]$platform <- paste0( names(table(sampleAnnot3[["Pawitan_GSE1456"]]$platform))[[1]] ,"_",
-                                    names(table(sampleAnnot3[["Pawitan_GSE1456"]]$platform))[["Pawitan_GSE1456"]])
+                                                      names(table(sampleAnnot3[["Pawitan_GSE1456"]]$platform))[["Pawitan_GSE1456"]])
 rownames(sampleAnnot3[["Pawitan_GSE1456"]]) <- NULL   # to merge after and com ID will be used
 sampleAnnot3[["Pawitan_GSE1456"]] <- unique( sampleAnnot3[["Pawitan_GSE1456"]][ , 2:ncol(sampleAnnot3[["Pawitan_GSE1456"]]) ] ) # keep only the common column (not Geo_id here)
 
@@ -615,17 +670,21 @@ sampleAnnot3[["Pawitan_GSE1456"]][1:10,]
 #========================================
 
 sampleAnnot3[["Rody_GSE31519"]]<- data.frame(batch     = rep(names(sampleAnnot)[["Rody_GSE31519"]],nrow(sampleAnnot[["Rody_GSE31519"]])),
-                                platform  = sampleAnnot[["Rody_GSE31519"]]$"platform_id" ,
-                                relapse   = sampleAnnot[["Rody_GSE31519"]]$"characteristics_ch1.5" ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Rody_GSE31519"]]$"event-free interval (months):ch1"))),digits=1) ,    # month
-                                ER        = rep("Neg",nrow(sampleAnnot[["Rody_GSE31519"]])) ,
-                                PR        = rep("Neg",nrow(sampleAnnot[["Rody_GSE31519"]])) ,
-                                HER2      = rep("Neg",nrow(sampleAnnot[["Rody_GSE31519"]])) ,
-                                Treatment = sampleAnnot[["Rody_GSE31519"]]$"chemotherapy treatment (yes/no):ch1",
-                                Treatment2 = sampleAnnot[["Rody_GSE31519"]]$"cohort:ch1" ,
-                                age      = rep(NA,nrow(sampleAnnot[["Rody_GSE31519"]])) ,
-                                row.names = rownames(sampleAnnot[["Rody_GSE31519"]]),
-                                stringsAsFactors = F)
+                                             platform  = sampleAnnot[["Rody_GSE31519"]]$"platform_id" ,
+                                             relapse   = sampleAnnot[["Rody_GSE31519"]]$"characteristics_ch1.5" ,
+                                             RFS      =  round((as.numeric(as.character(sampleAnnot2[["Rody_GSE31519"]]$"event-free interval (months):ch1"))),digits=1) ,    # month
+                                             ER        = rep("Neg",nrow(sampleAnnot[["Rody_GSE31519"]])) ,
+                                             PR        = rep("Neg",nrow(sampleAnnot[["Rody_GSE31519"]])) ,
+                                             HER2      = rep("Neg",nrow(sampleAnnot[["Rody_GSE31519"]])) ,
+                                             Treatment = sampleAnnot[["Rody_GSE31519"]]$"chemotherapy treatment (yes/no):ch1",
+                                             Treatment2 = sampleAnnot[["Rody_GSE31519"]]$"cohort:ch1" ,
+                                             age      = rep(NA,nrow(sampleAnnot[["Rody_GSE31519"]])) ,
+                                             tumorSize= rep(NA,nrow(sampleAnnot2[["Rody_GSE31519"]])),
+                                             LN= rep(NA,nrow(sampleAnnot2[["Rody_GSE31519"]])),
+                                             grade= rep(NA,nrow(sampleAnnot2[["Rody_GSE31519"]])),
+                                             biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Rody_GSE31519"]])),
+                                             row.names = rownames(sampleAnnot[["Rody_GSE31519"]]),
+                                             stringsAsFactors = F)
 
 sampleAnnot3[["Rody_GSE31519"]][1:10,]
 table(sampleAnnot3[["Rody_GSE31519"]]$relapse)
@@ -649,16 +708,20 @@ saveRDS(sampleAnnot3,file= "040821_sampleAnnot_Mod.rds")
 #==========================
 
 sampleAnnot3[["Schmidt_GSE11121"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Schmidt_GSE11121"]],nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
-                                platform  = sampleAnnot2[["Schmidt_GSE11121"]]$platform_id ,
-                                relapse   = sampleAnnot2[["Schmidt_GSE11121"]]$`e.dmfs:ch1` ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Schmidt_GSE11121"]]$"t.dmfs:ch1"))),digits=1) ,    # month
-                                ER        = rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
-                                PR        = rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
-                                HER2      = rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
-                                Treatment = rep("surg_o_surg_radio",nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
-                                age      =  rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
-                                row.names = rownames(sampleAnnot2[["Schmidt_GSE11121"]]),
-                                stringsAsFactors = F)
+                                                platform  = sampleAnnot2[["Schmidt_GSE11121"]]$platform_id ,
+                                                relapse   = sampleAnnot2[["Schmidt_GSE11121"]]$`e.dmfs:ch1` ,
+                                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Schmidt_GSE11121"]]$"t.dmfs:ch1"))),digits=1) ,    # month
+                                                ER        = rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                                PR        = rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                                HER2      = rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                                Treatment = rep("surg_o_surg_radio",nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                                age      =  rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                                tumorSize= rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                                LN= rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                                grade= rep(NA,nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                                biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Schmidt_GSE11121"]])),
+                                                row.names = rownames(sampleAnnot2[["Schmidt_GSE11121"]]),
+                                                stringsAsFactors = F)
 
 sampleAnnot3[["Schmidt_GSE11121"]][1:10,]
 table(sampleAnnot3[["Schmidt_GSE11121"]]$relapse)
@@ -669,16 +732,20 @@ table(sampleAnnot3[["Schmidt_GSE11121"]]$relapse)
 #===============================
 
 sampleAnnot3[["Sircoulomb_GSE17907"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Sircoulomb_GSE17907"]],nrow(sampleAnnot2[["Sircoulomb_GSE17907"]])),
-                                platform  = sampleAnnot2[["Sircoulomb_GSE17907"]]$platform_id ,
-                                relapse   = sampleAnnot2[["Sircoulomb_GSE17907"]]$`mfs:ch1` ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Sircoulomb_GSE17907"]]$`mfsdel (month):ch1`))),digits=1) ,    # month
-                                ER        = sampleAnnot2[["Sircoulomb_GSE17907"]]$`er ihc status:ch1` ,
-                                PR        = sampleAnnot2[["Sircoulomb_GSE17907"]]$`pr ihc status:ch1` ,
-                                HER2      = sampleAnnot2[["Sircoulomb_GSE17907"]]$`erbb2 ihc status:ch1` ,
-                                Treatment = rep(NA,nrow(sampleAnnot2[["Sircoulomb_GSE17907"]])),
-                                age      = sampleAnnot2[["Sircoulomb_GSE17907"]]$`age of diagnosis (year):ch1` ,
-                                row.names = rownames(sampleAnnot2[["Sircoulomb_GSE17907"]]),
-                                stringsAsFactors = F)
+                                                   platform  = sampleAnnot2[["Sircoulomb_GSE17907"]]$platform_id ,
+                                                   relapse   = sampleAnnot2[["Sircoulomb_GSE17907"]]$`mfs:ch1` ,
+                                                   RFS      =  round((as.numeric(as.character(sampleAnnot2[["Sircoulomb_GSE17907"]]$`mfsdel (month):ch1`))),digits=1) ,    # month
+                                                   ER        = sampleAnnot2[["Sircoulomb_GSE17907"]]$`er ihc status:ch1` ,
+                                                   PR        = sampleAnnot2[["Sircoulomb_GSE17907"]]$`pr ihc status:ch1` ,
+                                                   HER2      = sampleAnnot2[["Sircoulomb_GSE17907"]]$`erbb2 ihc status:ch1` ,
+                                                   Treatment = rep(NA,nrow(sampleAnnot2[["Sircoulomb_GSE17907"]])),
+                                                   age      = sampleAnnot2[["Sircoulomb_GSE17907"]]$`age of diagnosis (year):ch1` ,
+                                                   tumorSize= rep(NA,nrow(sampleAnnot2[["Sircoulomb_GSE17907"]])),
+                                                   LN= rep(NA,nrow(sampleAnnot2[["Sircoulomb_GSE17907"]])),
+                                                   grade= rep(NA,nrow(sampleAnnot2[["Sircoulomb_GSE17907"]])),
+                                                   biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Sircoulomb_GSE17907"]])),
+                                                   row.names = rownames(sampleAnnot2[["Sircoulomb_GSE17907"]]),
+                                                   stringsAsFactors = F)
 
 sampleAnnot3[["Sircoulomb_GSE17907"]][1:10,]
 table(sampleAnnot3[["Sircoulomb_GSE17907"]]$relapse)
@@ -706,16 +773,20 @@ sampleAnnot3[["Sircoulomb_GSE17907"]][1:10,]
 #================================
 
 sampleAnnot3[["Symmans_GSE17705"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Symmans_GSE17705"]],nrow(sampleAnnot2[["Symmans_GSE17705"]])),
-                                platform  = sampleAnnot2[["Symmans_GSE17705"]]$platform_id ,
-                                relapse   = sampleAnnot2[["Symmans_GSE17705"]]$`distant relapse (1=dr, 0 censored):ch1` ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Symmans_GSE17705"]]$`event time (years):ch1`)))*12,digits=1) ,    #year -> month
-                                ER        = sampleAnnot2[["Symmans_GSE17705"]]$`estrogen receptor (er) status:ch1` ,
-                                PR        = rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
-                                HER2      = rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
-                                Treatment = sampleAnnot2[["Symmans_GSE17705"]]$`endocrine therapy:ch1`,
-                                age      = rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
-                                row.names = rownames(sampleAnnot2[["Symmans_GSE17705"]]),
-                                stringsAsFactors = F)
+                                                platform  = sampleAnnot2[["Symmans_GSE17705"]]$platform_id ,
+                                                relapse   = sampleAnnot2[["Symmans_GSE17705"]]$`distant relapse (1=dr, 0 censored):ch1` ,
+                                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Symmans_GSE17705"]]$`event time (years):ch1`)))*12,digits=1) ,    #year -> month
+                                                ER        = sampleAnnot2[["Symmans_GSE17705"]]$`estrogen receptor (er) status:ch1` ,
+                                                PR        = rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
+                                                HER2      = rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
+                                                Treatment = sampleAnnot2[["Symmans_GSE17705"]]$`endocrine therapy:ch1`,
+                                                age      = rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
+                                                tumorSize= rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
+                                                LN= rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
+                                                grade= rep(NA,nrow(sampleAnnot2[["Symmans_GSE17705"]])),
+                                                biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Symmans_GSE17705"]])),
+                                                row.names = rownames(sampleAnnot2[["Symmans_GSE17705"]]),
+                                                stringsAsFactors = F)
 
 sampleAnnot3[["Symmans_GSE17705"]][1:10,]
 table(sampleAnnot3[["Symmans_GSE17705"]]$relapse)
@@ -731,16 +802,20 @@ sampleAnnot3[["Symmans_GSE17705"]][1:10,]
 #====================================
 
 sampleAnnot3[["Wang05_GSE2034"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Wang05_GSE2034"]],nrow(sampleAnnot2[["Wang05_GSE2034"]])),
-                               platform  = sampleAnnot2[["Wang05_GSE2034"]]$platform_id ,
-                               relapse   = sampleAnnot2[["Wang05_GSE2034"]]$`bone relapses (1=yes, 0=no):ch1` ,
-                               RFS       = rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
-                               ER        = rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
-                               PR        = rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
-                               HER2      = rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
-                               Treatment = rep("surg_o_surg_radio",nrow(sampleAnnot2[["Wang05_GSE2034"]])),
-                               age      = rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
-                               row.names = rownames(sampleAnnot2[["Wang05_GSE2034"]]),
-                               stringsAsFactors = F)
+                                              platform  = sampleAnnot2[["Wang05_GSE2034"]]$platform_id ,
+                                              relapse   = sampleAnnot2[["Wang05_GSE2034"]]$`bone relapses (1=yes, 0=no):ch1` ,
+                                              RFS       = rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
+                                              ER        = rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
+                                              PR        = rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
+                                              HER2      = rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
+                                              Treatment = rep("surg_o_surg_radio",nrow(sampleAnnot2[["Wang05_GSE2034"]])),
+                                              age      = rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
+                                              tumorSize= rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
+                                              LN= rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
+                                              grade= rep(NA,nrow(sampleAnnot2[["Wang05_GSE2034"]])),
+                                              biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Wang05_GSE2034"]])),
+                                              row.names = rownames(sampleAnnot2[["Wang05_GSE2034"]]),
+                                              stringsAsFactors = F)
 
 sampleAnnot3[["Wang05_GSE2034"]][1:20,]
 table(sampleAnnot3[["Wang05_GSE2034"]]$relapse)
@@ -750,16 +825,20 @@ table(sampleAnnot3[["Wang05_GSE2034"]]$relapse)
 #===============================
 
 sampleAnnot3[["Zhang_GSE12093"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Zhang_GSE12093"]],nrow(sampleAnnot2[["Zhang_GSE12093"]])),
-                                platform  = sampleAnnot2[["Zhang_GSE12093"]]$platform_id ,
-                                relapse   = sampleAnnot2[["Zhang_GSE12093"]]$characteristics_ch1.2 ,
-                                RFS      =  round((as.numeric(as.character(sampleAnnot2[["Zhang_GSE12093"]]$`DFS.time:ch1`))),digits=1) ,    # month
-                                ER        = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
-                                PR        = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
-                                HER2      = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
-                                Treatment = rep("Tam_only",nrow(sampleAnnot2[["Zhang_GSE12093"]])),
-                                age      = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
-                                row.names = rownames(sampleAnnot2[["Zhang_GSE12093"]]),
-                                stringsAsFactors = F)
+                                              platform  = sampleAnnot2[["Zhang_GSE12093"]]$platform_id ,
+                                              relapse   = sampleAnnot2[["Zhang_GSE12093"]]$characteristics_ch1.2 ,
+                                              RFS      =  round((as.numeric(as.character(sampleAnnot2[["Zhang_GSE12093"]]$`DFS.time:ch1`))),digits=1) ,    # month
+                                              ER        = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                              PR        = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                              HER2      = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                              Treatment = rep("Tam_only",nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                              age      = rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                              tumorSize= rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                              LN= rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                              grade= rep(NA,nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                              biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Zhang_GSE12093"]])),
+                                              row.names = rownames(sampleAnnot2[["Zhang_GSE12093"]]),
+                                              stringsAsFactors = F)
 
 sampleAnnot3[["Zhang_GSE12093"]][1:10,]
 table(sampleAnnot3[["Zhang_GSE12093"]]$relapse)
@@ -771,16 +850,20 @@ sampleAnnot3[["Zhang_GSE12093"]][1:10,]
 #================================
 
 sampleAnnot3[["Zhou_GSE7378"]]<- data.frame(batch     = rep(names(sampleAnnot2)[["Zhou_GSE7378"]],nrow(sampleAnnot2[["Zhou_GSE7378"]])),
-                               platform  = sampleAnnot2[["Zhou_GSE7378"]]$platform_id ,
-                               relapse   = sampleAnnot2[["Zhou_GSE7378"]]$characteristics_ch1.2 ,
-                               RFS      =  round((as.numeric(as.character(sampleAnnot2[["Zhou_GSE7378"]]$"DFS_years:")))*12,digits=1) ,    #year -> month
-                               ER        = sampleAnnot2[["Zhou_GSE7378"]]$characteristics_ch1 ,
-                               PR        = rep(NA,nrow(sampleAnnot2[["Zhou_GSE7378"]])),
-                               HER2      = rep(NA,nrow(sampleAnnot2[["Zhou_GSE7378"]])),
-                               Treatment = rep("chemo_ao_horm",nrow(sampleAnnot2[["Zhou_GSE7378"]])),
-                               age      = sampleAnnot2[["Zhou_GSE7378"]]$`age:ch1` ,  #to check
-                               row.names = rownames(sampleAnnot2[["Zhou_GSE7378"]]),
-                               stringsAsFactors = F)
+                                            platform  = sampleAnnot2[["Zhou_GSE7378"]]$platform_id ,
+                                            relapse   = sampleAnnot2[["Zhou_GSE7378"]]$characteristics_ch1.2 ,
+                                            RFS      =  round((as.numeric(as.character(sampleAnnot2[["Zhou_GSE7378"]]$"DFS_years:")))*12,digits=1) ,    #year -> month
+                                            ER        = sampleAnnot2[["Zhou_GSE7378"]]$characteristics_ch1 ,
+                                            PR        = rep(NA,nrow(sampleAnnot2[["Zhou_GSE7378"]])),
+                                            HER2      = rep(NA,nrow(sampleAnnot2[["Zhou_GSE7378"]])),
+                                            Treatment = rep("chemo_ao_horm",nrow(sampleAnnot2[["Zhou_GSE7378"]])),
+                                            age      = sampleAnnot2[["Zhou_GSE7378"]]$`age:ch1` ,  #to check
+                                            tumorSize= rep(NA,nrow(sampleAnnot2[["Zhou_GSE7378"]])),
+                                            LN= rep(NA,nrow(sampleAnnot2[["Zhou_GSE7378"]])),
+                                            grade= rep(NA,nrow(sampleAnnot2[["Zhou_GSE7378"]])),
+                                            biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Zhou_GSE7378"]])),
+                                            row.names = rownames(sampleAnnot2[["Zhou_GSE7378"]]),
+                                            stringsAsFactors = F)
 
 sampleAnnot3[["Zhou_GSE7378"]][1:10,]
 table(sampleAnnot3[["Zhou_GSE7378"]]$relapse)
@@ -813,6 +896,10 @@ rownames(Guedj_sampleAnnot)<- Guedj_sampleAnnot$name; Guedj_sampleAnnot <-Guedj_
 
 sampleAnnot3[[19]] <- Guedj_sampleAnnot
 sampleAnnot3[[19]]$age <- rep(NA,nrow(sampleAnnot3[[19]]))
+sampleAnnot3[[19]]$tumorSize= rep(NA,nrow(sampleAnnot2[["Clarke_GSE42568"]])),
+sampleAnnot3[[19]]$LN= rep(NA,nrow(sampleAnnot2[["Clarke_GSE42568"]])),
+sampleAnnot3[[19]]$grade= rep(NA,nrow(sampleAnnot2[["Clarke_GSE42568"]])),
+sampleAnnot3[[19]]$biopsy= rep("FF_tissue ",nrow(sampleAnnot2[["Clarke_GSE42568"]])),
 
 sampleAnnot3[[19]][1:10,]
 table(sampleAnnot3[[19]]$relapse)
@@ -834,9 +921,4 @@ sampleAnnot3[[19]][1:10,]
 rownames(sampleAnnot3[[19]]) <- make.names(rownames(sampleAnnot3[[19]])) 
 
 #sampleAnnot3[[19]][, c("relapse","RFS")]
-
-
-
-
-
 
