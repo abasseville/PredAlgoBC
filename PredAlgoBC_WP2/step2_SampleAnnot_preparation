@@ -5,8 +5,8 @@ library(GEOquery)
 # Attention, two special cases (loi07 and Pawitan), where GPL96 (HG-U133A) and GPL97 (HG-U133B) have to be combined 
 #  =>  HG-U133A+ HG-U133B equivalent to HG-U133_Plus_2  (GPL70)
 
-dir.create("C:/Users/a-basseville/Documents/ICO/1-RESULTS/DATA_SSP/WP2_onlyaffy/rawCEL_andNorm")
-setwd("C:/Users/a-basseville/Documents/ICO/1-RESULTS/DATA_SSP/WP2_onlyaffy/rawCEL_andNorm")
+dir.create("rawCEL_andNorm")
+setwd("rawCEL_andNorm")
 
 
 celFolders <-c("Clarke_GSE42568","Desmedt07_GSE7390","Filipits_GSE26971","Hatzis_GSE25055","Kao_GSE20685",
